@@ -269,7 +269,7 @@
 
   /* لوحة إعلانات ذكية خاصة بقسم المفرق/المستهلك بس — بتحل محل شريط الترحيب وشريط الـ GPS */
   .retail-ad-banner-slot{ padding:14px 14px 16px; }
-  .retail-ad-viewport{ position:relative; width:100%; aspect-ratio:16/11; border-radius:18px; overflow:hidden; box-shadow:0 8px 22px rgba(16,25,58,0.18); background:linear-gradient(135deg,#9C7A24,#3A2F1B); }
+  .retail-ad-viewport{ position:relative; width:100%; aspect-ratio:16/9; border-radius:18px; overflow:hidden; box-shadow:0 8px 22px rgba(16,25,58,0.18); background:linear-gradient(135deg,#9C7A24,#3A2F1B); }
   .retail-ad-slide{ position:absolute; inset:0; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .6s ease; cursor:pointer; text-decoration:none; }
   .retail-ad-slide.active{ opacity:1; pointer-events:auto; }
   .retail-ad-slide img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
@@ -1442,6 +1442,48 @@ const CATEGORIES = {
   "butcher": { name: "ملحمة", emoji: "🍖" },
   "tobacco_products": { name: "التبغ والسجائر والمعسل", emoji: "🚬" }
 };
+
+// ===== أقسام مضافة يدوياً من لوحة التحكم (بتنضاف على CATEGORIES تلقائياً وبتظهر بشبكة الأقسام) =====
+window.DYNAMIC_CATEGORY_KEYS = [];
+db.collection('customCategories').onSnapshot(snap => {
+  const keys = [];
+  snap.forEach(doc => {
+    const d = doc.data();
+    CATEGORIES[doc.id] = { name: d.name || doc.id, emoji: d.emoji || '📦' };
+    keys.push(doc.id);
+  });
+  window.DYNAMIC_CATEGORY_KEYS = keys;
+  if (typeof renderApp === 'function') renderApp();
+  if (typeof renderNewCategoriesListBox === 'function' && document.getElementById('newCategoriesListBox')) renderNewCategoriesListBox();
+});
+async function addNewCategory(){
+  const name = document.getElementById('adm_newcat_name').value.trim();
+  const emoji = document.getElementById('adm_newcat_emoji').value.trim() || '📦';
+  if (!name){ alert('لازم تكتبي اسم القسم'); return; }
+  const key = 'custom_' + name.replace(/\s+/g,'_').replace(/[^\w\u0600-\u06FF]/g,'') + '_' + Date.now();
+  try {
+    await db.collection('customCategories').doc(key).set({ name, emoji, order: Date.now() });
+    alert('✅ انضاف القسم بنجاح، وصار متاح باختيار الأقسام لما تضيفي صنف');
+    document.getElementById('adm_newcat_name').value = '';
+    document.getElementById('adm_newcat_emoji').value = '';
+  } catch(e){ alert('صار خطأ: ' + e.message); }
+}
+async function removeCustomCategory(key){
+  if (!confirm('متأكدة بدك تحذفي هالقسم؟ (الأصناف يلي فيه بتضل موجودة بقاعدة البيانات بس القسم رح يختفي من الواجهة)')) return;
+  try { await db.collection('customCategories').doc(key).delete(); }
+  catch(e){ alert('صار خطأ: ' + e.message); }
+}
+function renderNewCategoriesListBox(){
+  const box = document.getElementById('newCategoriesListBox');
+  if (!box) return;
+  const keys = window.DYNAMIC_CATEGORY_KEYS || [];
+  if (!keys.length){ box.innerHTML = `<div style="color:#999; font-size:12px; text-align:center;">ما في أقسام مضافة يدوياً لسا</div>`; return; }
+  box.innerHTML = keys.map(k => `
+    <div style="background:#3A2F1B; border-radius:8px; padding:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="color:#fff; font-size:12px; font-weight:700;">${(CATEGORIES[k] || {}).emoji || '📦'} ${(CATEGORIES[k] || {}).name || k}</div>
+      <button onclick="removeCustomCategory('${k}')" style="background:#b33; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:11px;">🗑️ إزالة</button>
+    </div>`).join('');
+}
 
 
 const DAIRY_SUBCATS = [
@@ -2945,6 +2987,40 @@ function renderAdminProductList(){
     
 
     <details style="background:#9C7A24; border-radius:12px; padding:14px; margin-bottom:14px;">
+      <summary style="color:var(--gold); font-weight:800; font-size:14px; cursor:pointer;">➕ إضافة صنف جديد</summary>
+      <div style="margin-top:12px;">
+      <input id="adm_new_name" placeholder="اسم الصنف" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
+      <input id="adm_new_unit" placeholder="الوحدة (مثال: 1 كغم)" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
+      <select id="adm_new_category" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
+        ${Object.keys(CATEGORIES).map(k => `<option value="${k}">${CATEGORIES[k].emoji} ${CATEGORIES[k].name}</option>`).join('')}
+      </select>
+      <input id="adm_new_retail" type="number" step="0.01" placeholder="سعر المفرق (د.أ)" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
+      <input id="adm_new_wholesale" type="hidden" value="0">
+      <input id="adm_new_cost" type="hidden" value="0">
+      <input id="adm_new_company" type="hidden" value="">
+      <input id="adm_new_sub" type="hidden" value="">
+      <input id="adm_new_subsub" type="hidden" value="">
+      <input id="adm_new_image" type="hidden" value="">
+      <label style="display:block; color:#ccc; font-size:12px; margin-bottom:5px;">📷 صورة الصنف</label>
+      <input id="adm_new_image_file" type="file" accept="image/*" style="width:100%; padding:8px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:12px; margin-bottom:6px;">
+      <div id="adm_new_image_preview" style="color:#aaa; font-size:12px; margin-bottom:10px;"></div>
+      <button onclick="addAdminProduct()" style="width:100%; padding:10px; border-radius:8px; border:none; background:var(--gold); color:#3A2F1B; font-weight:900; font-size:14px;">➕ إضافة الصنف</button>
+      </div>
+    </details>
+
+    <details style="background:#9C7A24; border-radius:12px; padding:14px; margin-bottom:14px;">
+      <summary style="color:var(--gold); font-weight:800; font-size:14px; cursor:pointer;">🗂️ إضافة قسم جديد</summary>
+      <div style="margin-top:12px;">
+      <div style="color:#ccc; font-size:11px; margin-bottom:8px;">قسم جديد بيظهر مباشرة بشبكة الأقسام بالصفحة الرئيسية، وبيصير متاح للاختيار لما تضيفي صنف جديد.</div>
+      <input id="adm_newcat_name" placeholder="اسم القسم (مثال: العناية بالبشرة)" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
+      <input id="adm_newcat_emoji" placeholder="إيموجي (مثال: 🧴) — اختياري" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
+      <button onclick="addNewCategory()" style="width:100%; padding:10px; border-radius:8px; border:none; background:var(--gold); color:#3A2F1B; font-weight:900; font-size:14px; margin-bottom:14px;">➕ إضافة القسم</button>
+      <div style="color:#ccc; font-size:12px; margin-bottom:8px;">الأقسام المضافة يدوياً:</div>
+      <div id="newCategoriesListBox"></div>
+      </div>
+    </details>
+
+    <details style="background:#9C7A24; border-radius:12px; padding:14px; margin-bottom:14px;">
       <summary style="color:var(--gold); font-weight:800; font-size:14px; cursor:pointer;">🎁 إدارة العروض (قسم المفرق/المستهلك)</summary>
       <div style="margin-top:12px;">
       <div style="color:#ccc; font-size:11px; margin-bottom:8px;">قسم المفرق بيشتغل بس بالعروض اللي تضيفيها هون: صورة، تفاصيل، وسعر — وبيضاف تلقائياً لسلة الزبون تماماً متل أي صنف عادي.</div>
@@ -2988,9 +3064,9 @@ function renderAdminProductList(){
     <details style="background:#9C7A24; border-radius:12px; padding:14px; margin-bottom:14px;">
       <summary style="color:var(--gold); font-weight:800; font-size:14px; cursor:pointer;">🤖 لوحة إعلانات ذكية (قسم المفرق/المستهلك)</summary>
       <div style="margin-top:12px;">
-      <div style="color:#ccc; font-size:11px; margin-bottom:8px;">هاي لوحة كبيرة بتحل محل شريط الترحيب فوق شاشة المفرق. بس اختاري عرض من عروضك، والباقي (الصورة، الاسم، السعر) بيتولّد تلقائياً منه. أو ضيفي فيديو/GIF بدل الصورة الثابتة.</div>
+      <div style="color:#ccc; font-size:11px; margin-bottom:8px;">هاي لوحة كبيرة بتحل محل شريط الترحيب فوق شاشة المفرق. اختيار العرض اختياري: لو اخترتي عرض بتتولد الصورة/الاسم/السعر تلقائياً منه، أو ضيفي فيديو/GIF لحاله بدون عرض.</div>
       <select id="adm_retail_ad_offer" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
-        <option value="">-- اختاري عرض --</option>
+        <option value="">-- بدون عرض (فيديو/GIF لحاله) --</option>
         ${Object.values(window.DYNAMIC_OFFERS || {}).map(o => `<option value="${o.numericId}">${(o.title || '').replace(/"/g,'&quot;')}</option>`).join('')}
       </select>
       <label style="display:block; color:#ffd27a; font-size:12px; margin-bottom:5px;">🎬 رابط فيديو يوتيوب (اختياري — بدل الصورة الثابتة)</label>
@@ -3039,6 +3115,7 @@ function renderAdminProductList(){
   renderOffersListBox();
   renderRetailFeaturedListBox();
   renderSpecialOffersListBox();
+  renderNewCategoriesListBox();
   showAnalyticsTab(_analyticsTab);
 }
 
@@ -5162,8 +5239,8 @@ function renderRetailAdBanner(){
   if (!viewport || !dotsWrap) return;
   const featured = (window.RETAIL_FEATURED_OFFERS || [])
     .map(f => {
-      const p = PRODUCTS_DATA.find(x => x.__isOffer && x.id === f.offerNumericId);
-      if (!p) return null;
+      const p = f.offerNumericId ? PRODUCTS_DATA.find(x => x.__isOffer && x.id === f.offerNumericId) : null;
+      if (f.offerNumericId && !p) return null; // عرض مرتبط انحذف
       return { p, videoId: f.videoId || '', videoFileUrl: f.videoFileUrl || '', videoDurationSec: f.videoDurationSec || 0, gifUrl: f.gifUrl || '' };
     })
     .filter(Boolean);
@@ -5176,17 +5253,20 @@ function renderRetailAdBanner(){
     const mediaHtml = f.gifUrl
       ? `<img src="${f.gifUrl}">`
       : (f.videoFileUrl
-        ? `<video class="ad-video-frame" src="${f.videoFileUrl}" autoplay muted loop playsinline webkit-playsinline="true" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; pointer-events:none;"></video>`
+        ? `<video class="ad-video-frame" src="${f.videoFileUrl}" autoplay muted loop playsinline webkit-playsinline="true" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000; pointer-events:none;"></video>`
         : (f.videoId
           ? `<iframe class="ad-video-frame" data-video-id="${f.videoId}" src="https://www.youtube.com/embed/${f.videoId}?autoplay=1&mute=1&loop=1&playlist=${f.videoId}&controls=0&modestbranding=1&playsinline=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&showinfo=0&enablejsapi=1" webkit-playsinline="true" style="position:absolute; inset:0; width:100%; height:100%; border:none; pointer-events:none;" allow="autoplay; encrypted-media; picture-in-picture"></iframe>`
-          : (p.image ? `<img src="${p.image}">` : '')));
-    return `
-    <div class="retail-ad-slide${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="openOfferDetail(${p.id})">
-      ${mediaHtml}
+          : (p && p.image ? `<img src="${p.image}">` : '')));
+    const overlayHtml = p ? `
       <div class="retail-ad-slide-overlay">
         <div class="retail-ad-slide-title">${p.name}</div>
         <div class="retail-ad-slide-price">${p.priceRetail > 0 ? p.priceRetail.toFixed(2) + ' د.أ' : 'السعر لاحقاً'}</div>
-      </div>
+      </div>` : '';
+    const clickAttr = p ? `onclick="openOfferDetail(${p.id})"` : '';
+    return `
+    <div class="retail-ad-slide${i === 0 ? ' active' : ''}" data-idx="${i}" ${clickAttr}>
+      ${mediaHtml}
+      ${overlayHtml}
     </div>
   `;
   }).join('');
@@ -5240,20 +5320,23 @@ function renderFeaturedOffersStrip(){
 // إدارة اللوحة الذكية من لوحة التحكم: بس اختاري العرض وبتنضاف تلقائياً
 async function addRetailFeaturedOffer(){
   const select = document.getElementById('adm_retail_ad_offer');
-  const offerNumericId = parseInt(select.value, 10);
+  const offerNumericId = parseInt(select.value, 10) || 0;
   const videoUrl = document.getElementById('adm_retail_ad_video').value.trim();
   const videoId = extractYoutubeId(videoUrl);
   if (videoUrl && !videoId){ alert('رابط اليوتيوب مش واضح، تأكدي إنه رابط فيديو صحيح'); return; }
   const videoDurationSec = parseInt(document.getElementById('adm_retail_ad_video_duration').value, 10) || 0;
   const videoFileUrl = document.getElementById('adm_retail_ad_video_file_url').value.trim();
   const gifUrl = document.getElementById('adm_retail_ad_gif').value.trim();
-  if (!offerNumericId){ alert('لازم تختاري عرض'); return; }
-  if ((window.RETAIL_FEATURED_OFFERS || []).some(f => f.offerNumericId === offerNumericId)){
+  if (!offerNumericId && !videoId && !videoFileUrl && !gifUrl){
+    alert('لازم إما تختاري عرض، أو تضيفي فيديو/GIF على الأقل');
+    return;
+  }
+  if (offerNumericId && (window.RETAIL_FEATURED_OFFERS || []).some(f => f.offerNumericId === offerNumericId)){
     alert('هالعرض مضاف باللوحة أصلاً'); return;
   }
   try {
     await db.collection('retailFeaturedOffers').add({
-      offerNumericId,
+      offerNumericId: offerNumericId || null,
       videoId: videoId || '',
       videoFileUrl: videoFileUrl || '',
       videoDurationSec: (videoId || videoFileUrl) ? (videoDurationSec || 15) : 0,
@@ -5261,6 +5344,7 @@ async function addRetailFeaturedOffer(){
       order: Date.now(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    select.value = '';
     document.getElementById('adm_retail_ad_video').value = '';
     document.getElementById('adm_retail_ad_video_duration').value = '';
     document.getElementById('adm_retail_ad_video_file_url').value = '';
@@ -5282,11 +5366,12 @@ function renderRetailFeaturedListBox(){
     return;
   }
   box.innerHTML = list.map(f => {
-    const p = PRODUCTS_DATA.find(x => x.__isOffer && x.id === f.offerNumericId);
+    const p = f.offerNumericId ? PRODUCTS_DATA.find(x => x.__isOffer && x.id === f.offerNumericId) : null;
     const mediaBadge = f.gifUrl ? ' 🌀 GIF' : (f.videoFileUrl ? ' 📹 فيديو مرفوع' : (f.videoId ? ' 🎬 فيديو يوتيوب' : ''));
+    const label = p ? p.name : (f.offerNumericId ? '(عرض محذوف)' : '(بدون عرض — فيديو/GIF لحاله)');
     return `
     <div style="background:#3A2F1B; border-radius:8px; padding:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-      <div style="color:#fff; font-size:12px; font-weight:700;">${p ? p.name : '(عرض محذوف)'}${mediaBadge}</div>
+      <div style="color:#fff; font-size:12px; font-weight:700;">${label}${mediaBadge}</div>
       <button onclick="removeRetailFeaturedOffer('${f.docId}')" style="background:#b33; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:11px;">🗑️ إزالة</button>
     </div>`;
   }).join('');
@@ -5357,7 +5442,7 @@ function renderCategoriesView(){
     return;
   }
 
-  const order = RETAIL_HOME_ORDER_FULL;
+  const order = [...RETAIL_HOME_ORDER_FULL, ...(window.DYNAMIC_CATEGORY_KEYS || [])];
   target.innerHTML = order.map(key => {
     const info = RETAIL_CATEGORY_GROUPS[key] || CATEGORIES[key];
     return `
