@@ -839,7 +839,7 @@
         <span>صافي حساب بضائعك الحالي:</span>
         <span id="drawerTotalLabel">0.00 د.أ</span>
       </div>
-      <div id="minOrderNote" style="font-size:12px; color:var(--gray); text-align:center; margin:-6px 0 8px;">✨ الحد الأدنى للطلب 100 دينار أردني</div>
+      <div id="minOrderNote" style="font-size:12px; color:var(--gray); text-align:center; margin:-6px 0 8px;">✨ الحد الأدنى للطلب 25 دينار أردني</div>
       <div class="addr-row">
         <label class="addr-label">👤 اسم المحل أو المشتري الكريم</label>
         <input id="inpCustomerName" class="addr-input" placeholder="مثال: سوبرماركت الياسمين أو مؤسسة الطويل">
@@ -903,7 +903,7 @@
 const STORE_PHONE = "962772812892";
 const STORE_PHONE_WAREHOUSE_2 = "962787244324";
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1526947385035591840/uwTG6K4Xd-ClAXKRksVP8-YcYTn_4PmZcULNFE9R4l-cIyu5cutarcAV9pE5uotFWsTE";
-const MIN_ORDER_TOTAL = 100; // الحد الأدنى للطلب بالدينار الأردني
+const MIN_ORDER_TOTAL = 25; // الحد الأدنى للطلب بالدينار الأردني (قسم المفرق/المستهلك)
 /* ============================================================ */
 
 // بيانات تواصل كل شركة (لتحويل جزء الطلب الخاص فيها تلقائياً)
@@ -1276,7 +1276,7 @@ async function seedFirestoreFromLocalData(){
   for (let i = 0; i < PRODUCTS_DATA.length; i += batchSize){
     const batch = db.batch();
     PRODUCTS_DATA.slice(i, i + batchSize).forEach(p => {
-      const ref = db.collection('products').doc(String(p.id));
+      const ref = db.collection('retailProducts').doc(String(p.id));
       const docData = {
         name: p.name, unit: p.unit, category: p.category,
         priceRetail: p.priceRetail || 0, priceWholesale: p.priceWholesale || 0,
@@ -1293,7 +1293,7 @@ async function seedFirestoreFromLocalData(){
 // بدل ما نعيد قراءة كل الأصناف من الصفر بكل زيارة، نحفظ آخر نسخة بجهاز الزائر
 // ونشترك بس بالتغييرات الجديدة بعد آخر مزامنة (updatedAt). هذا يقلل الاستهلاك
 // اليومي بشكل كبير مع بقاء أي تعديل يظهر فوراً لكل الزوار.
-const PRODUCTS_CACHE_KEY = 'aseel_products_overrides_v1';
+const PRODUCTS_CACHE_KEY = 'ayla_retail_products_overrides_v1';
 
 function loadProductsCache(){
   try {
@@ -1342,7 +1342,7 @@ function applyProductOverride(id, data, removed){
 
 async function initFirestoreSync(){
   try {
-    const snap1 = await db.collection('products').limit(1).get();
+    const snap1 = await db.collection('retailProducts').limit(1).get();
     if (snap1.empty){
       await seedFirestoreFromLocalData();
     }
@@ -1364,8 +1364,8 @@ async function initFirestoreSync(){
     // بعد كذا، نشترك بس بالتغييرات الجديدة (updatedAt) فيبقى التحديث فورياً
     // بدون إعادة قراءة كل الأصناف من جديد كل زيارة.
     const query = cache
-      ? db.collection('products').where('updatedAt', '>', new Date(lastSync))
-      : db.collection('products');
+      ? db.collection('retailProducts').where('updatedAt', '>', new Date(lastSync))
+      : db.collection('retailProducts');
 
     query.onSnapshot(snapshot => {
       let changed = false;
@@ -2870,7 +2870,7 @@ async function saveQuickEdit(){
     if (company) docData.company = company; else docData.company = firebase.firestore.FieldValue.delete();
     docData.sub = sub || firebase.firestore.FieldValue.delete();
     docData.subsub = subsub || firebase.firestore.FieldValue.delete();
-    await db.collection('products').doc(String(_quickEditProductId)).set(docData, { merge: true });
+    await db.collection('retailProducts').doc(String(_quickEditProductId)).set(docData, { merge: true });
     closeQuickEditModal();
   } catch(e){
     alert('صار خطأ بالحفظ: ' + e.message);
@@ -2880,7 +2880,7 @@ async function deleteQuickEdit(){
   if (!_quickEditProductId) return;
   if (!confirm('متأكدة بدك تحذفي هاد الصنف نهائياً؟')) return;
   try {
-    await db.collection('products').doc(String(_quickEditProductId)).delete();
+    await db.collection('retailProducts').doc(String(_quickEditProductId)).delete();
     closeQuickEditModal();
   } catch(e){
     alert('صار خطأ بالحذف: ' + e.message);
@@ -3556,7 +3556,7 @@ async function executeAssistantAction(action, data){
         costPrice: parseFloat(data.costPrice) || 0, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       if (data.image && isSyncableImage(data.image)) docData.image = data.image;
-      await db.collection('products').doc(String(newId)).set(docData, { merge: true });
+      await db.collection('retailProducts').doc(String(newId)).set(docData, { merge: true });
       _assistantLog(`✅ تمام! ضفت صنف "${data.name}" (سعر مفرق ${docData.priceRetail}، سعر جملة ${docData.priceWholesale})${docData.image ? ' مع صورة' : ''}.`, 'bot');
     }
     else if (action === 'edit_price'){
@@ -3565,7 +3565,7 @@ async function executeAssistantAction(action, data){
       const updateData = {};
       if (data.priceRetail !== undefined) updateData.priceRetail = parseFloat(data.priceRetail);
       if (data.priceWholesale !== undefined) updateData.priceWholesale = parseFloat(data.priceWholesale);
-      await db.collection('products').doc(String(p.id)).set(updateData, { merge: true });
+      await db.collection('retailProducts').doc(String(p.id)).set(updateData, { merge: true });
       _assistantLog(`✅ تم تعديل سعر "${p.name}".`, 'bot');
     }
     else if (action === 'add_company'){
@@ -3598,14 +3598,14 @@ async function executeAssistantAction(action, data){
       if (data.company) upd.company = data.company;
       if (data.image) upd.image = data.image;
       if (!Object.keys(upd).length){ _assistantLog('محتاجة على الأقل حقل وحد تغيّريه.', 'bot'); return; }
-      await db.collection('products').doc(String(p.id)).set(upd, { merge: true });
+      await db.collection('retailProducts').doc(String(p.id)).set(upd, { merge: true });
       _assistantLog(`✅ تم تعديل "${p.name}".`, 'bot');
     }
     else if (action === 'delete_product'){
       const p = PRODUCTS_DATA.find(x => x.name.includes(data.productName || '___'));
       if (!p){ _assistantLog(`ما لقيت صنف اسمه شبيه "${data.productName}".`, 'bot'); return; }
       if (!confirm(`متأكدة بدك تحذفي "${p.name}"؟ ما فيه تراجع.`)) { _assistantLog('تم الإلغاء، ما انحذف شي.', 'bot'); return; }
-      await db.collection('products').doc(String(p.id)).delete();
+      await db.collection('retailProducts').doc(String(p.id)).delete();
       _assistantLog(`🗑️ تم حذف "${p.name}".`, 'bot');
     }
     else if (action === 'edit_company'){
@@ -4600,12 +4600,12 @@ async function approvePendingChange(id){
   try {
     if (pc.type === 'product_add'){
       const docData = Object.assign({}, p, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-      await db.collection('products').doc(String(p.id)).set(docData, { merge: true });
+      await db.collection('retailProducts').doc(String(p.id)).set(docData, { merge: true });
     } else if (pc.type === 'product_edit'){
       const docData = Object.assign({}, p);
       delete docData.id;
       docData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-      await db.collection('products').doc(String(p.id)).set(docData, { merge: true });
+      await db.collection('retailProducts').doc(String(p.id)).set(docData, { merge: true });
     } else if (pc.type === 'company_logo'){
       await db.collection('companies').doc(pc.company).set({ name: pc.company, logo: p.logo }, { merge: true });
     } else if (pc.type === 'subbrand_add'){
@@ -4781,7 +4781,7 @@ async function renameCompanyEverywhere(oldName, newName){
   // 3) ننقل كل صنف كان مصنّف (تلقائياً أو صراحة) تحت الاسم القديم، بتحديد الشركة الجديدة صراحة إله
   const affectedProducts = PRODUCTS_DATA.filter(p => getBrand(p.name) === oldName);
   for (const p of affectedProducts){
-    await db.collection('products').doc(String(p.id)).set({ company: newName, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection('retailProducts').doc(String(p.id)).set({ company: newName, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
   }
 
   // 4) ننقل كل قسم فرعي (subBrands) مرتبط فيها
@@ -5027,8 +5027,8 @@ async function moveProductOrder(id, direction){
   if (idx === -1 || swapIdx < 0 || swapIdx >= list.length) return;
   const a = list[idx], b = list[swapIdx];
   try {
-    await db.collection('products').doc(String(a.id)).set({ order: swapIdx, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    await db.collection('products').doc(String(b.id)).set({ order: idx, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection('retailProducts').doc(String(a.id)).set({ order: swapIdx, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection('retailProducts').doc(String(b.id)).set({ order: idx, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
   } catch(e){
     alert('صار خطأ بتغيير الترتيب: ' + e.message);
   }
@@ -5049,7 +5049,7 @@ async function saveAdminProduct(id){
     docData.company = company || firebase.firestore.FieldValue.delete();
     docData.sub = sub || firebase.firestore.FieldValue.delete();
     docData.subsub = subsub || firebase.firestore.FieldValue.delete();
-    await db.collection('products').doc(String(id)).set(docData, { merge: true });
+    await db.collection('retailProducts').doc(String(id)).set(docData, { merge: true });
     alert('تم الحفظ ✅');
   } catch(e){
     alert('صار خطأ بالحفظ: ' + e.message);
@@ -5059,7 +5059,7 @@ async function saveAdminProduct(id){
 async function deleteAdminProduct(id){
   if (!confirm('متأكدة بدك تحذفي هاد الصنف نهائياً؟')) return;
   try {
-    await db.collection('products').doc(String(id)).delete();
+    await db.collection('retailProducts').doc(String(id)).delete();
     alert('تم الحذف 🗑️');
   } catch(e){
     alert('صار خطأ بالحذف: ' + e.message);
@@ -5085,7 +5085,7 @@ async function addAdminProduct(){
     if (company) docData.company = company;
     if (sub) docData.sub = sub;
     if (subsub) docData.subsub = subsub;
-    await db.collection('products').doc(String(newId)).set(docData, { merge: true });
+    await db.collection('retailProducts').doc(String(newId)).set(docData, { merge: true });
     alert('انضاف الصنف بنجاح ✅ (ID ' + newId + ')');
     document.getElementById('adm_new_name').value = '';
     document.getElementById('adm_new_unit').value = '';
@@ -6169,7 +6169,7 @@ async function forceAccurateProductRefresh(resultBoxId){
   const resultBox = document.getElementById(resultBoxId || 'forceRefreshResult');
   resultBox.textContent = '⏳ جاري الجلب المباشر من قاعدة البيانات...';
   try {
-    const snap = await db.collection('products').get({ source: 'server' });
+    const snap = await db.collection('retailProducts').get({ source: 'server' });
     const freshMap = {};
     snap.forEach(doc => { freshMap[doc.id] = doc.data(); });
     // نطبّق كل نسخة طازجة فوق البيانات الأساسية بدون أي كاش
@@ -6192,7 +6192,7 @@ async function toggleOutOfStock(id){
   if (!p) return;
   const newState = !p.outOfStock;
   try {
-    await db.collection('products').doc(String(id)).set({ outOfStock: newState, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection('retailProducts').doc(String(id)).set({ outOfStock: newState, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
     p.outOfStock = newState;
     if (newState && cart[id]){ delete cart[id]; saveCartToStorage(); updateCartPreview(); }
     renderApp();
@@ -6354,7 +6354,7 @@ function buildDrawerContent(){
       minNote.style.color = 'var(--green-dark)';
     } else {
       const remaining = (MIN_ORDER_TOTAL - total).toFixed(2);
-      minNote.innerHTML = `🧡 باقي ${remaining} د.أ للوصول للحد الأدنى (100 د.أ)`;
+      minNote.innerHTML = `🧡 باقي ${remaining} د.أ للوصول للحد الأدنى (${MIN_ORDER_TOTAL} د.أ)`;
       minNote.style.color = 'var(--gray)';
     }
   }
