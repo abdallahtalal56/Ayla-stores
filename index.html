@@ -1549,6 +1549,15 @@ const RICE_SUGAR_SALT_SUBCATS = [
   { key: "sugar",        name: "سكر" },
   { key: "salt",         name: "ملح" }
 ];
+const OIL_GHEE_SUBCATS = [
+  { key: "all",       name: "الكل" },
+  { key: "sunflower", name: "زيت شمس" },
+  { key: "corn",       name: "زيت ذرة" },
+  { key: "soy",        name: "زيت صويا" },
+  { key: "olive",      name: "زيت زيتون" },
+  { key: "palm",       name: "زيت نخيل" },
+  { key: "ghee",       name: "سمنة" }
+];
 let activeSub = "all";
 // أي عرض بقسم المفرق مفتوح حالياً بشاشة التفاصيل (null = عم نعرض قائمة العروض الأفقية)
 let activeOfferId = null;
@@ -2230,7 +2239,7 @@ const WHOLESALE_CATS_ORDER = [...RETAIL_CATS_ORDER];
 // مستودع البضائع والأصناف
 const PRODUCTS_DATA = [
   { id: 1, name: "اسامة ارز هندي حبة طويلة 3.5 كغم", unit: "3.5 كغم", category: "basmati_rice", priceRetail: 3.990, priceWholesale: 0, costPrice: 3.890, image: "" },
-  { id: 2, name: "مندي ارز بسمتي 7 كغم", unit: "7 كغم", category: "basmati_rice", priceRetail: 7.250, priceWholesale: 0, costPrice: 7.150, image: "" },
+  { id: 2, name: "مندي ارز بسمتي 7 كغم", unit: "7 كغم", category: "basmati_rice", priceRetail: 7.250, priceWholesale: 0, costPrice: 7.150, image: "https://i.ibb.co/HfLWZyHk/77c94888fb2f.webp" },
   { id: 3, name: "لوندي شيف ارز بسمتي حبة طويلة 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 4.090, priceWholesale: 0, costPrice: 3.990, image: "" },
   { id: 4, name: "ارز مصطفى بسمتي 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 4.690, priceWholesale: 0, costPrice: 4.590, image: "https://i.ibb.co/HLhbDqH1/b7ee9d545263.webp" },
   { id: 5, name: "الشعلان ارز علمين 2 كغم", unit: "2 كغم", category: "basmati_rice", priceRetail: 3.090, priceWholesale: 0, costPrice: 2.990, image: "" },
@@ -2260,7 +2269,7 @@ const PRODUCTS_DATA = [
   { id: 29, name: "ارز ابو البنت مزة سيلا 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 3.590, priceWholesale: 0, costPrice: 3.490, image: "" },
   { id: 30, name: "ارز صنوايت 9 كغم", unit: "9 كغم", category: "medium_rice", priceRetail: 9.350, priceWholesale: 0, costPrice: 9.250, image: "https://i.ibb.co/tTcKwtKp/04c5095fc61d.webp" },
   { id: 31, name: "ارز صنوايت أزرق 3 كغم", unit: "3 كغم", category: "medium_rice", priceRetail: 3.250, priceWholesale: 0, costPrice: 3.150, image: "https://i.ibb.co/DfD85Q0x/92c3d359f823.webp" },
-  { id: 32, name: "ارز فلفليهم جولد 900 غم", unit: "900 غم", category: "medium_rice", priceRetail: 0.950, priceWholesale: 0, costPrice: 0.850, image: "" },
+  { id: 32, name: "ارز فلفليهم جولد 900 غم", unit: "900 غم", category: "medium_rice", priceRetail: 0.950, priceWholesale: 0, costPrice: 0.850, image: "https://i.ibb.co/RpWyt1LG/f1d70f4f8d6f.webp" },
   { id: 33, name: "ارز لوندي شيف بسمتي 1 كغم", unit: "1 كغم", category: "basmati_rice", priceRetail: 1.450, priceWholesale: 0, costPrice: 1.350, image: "" },
   { id: 34, name: "ارز الاميرات 8 كغم", unit: "8 كغم", category: "medium_rice", priceRetail: 9.000, priceWholesale: 0, costPrice: 8.900, image: "" },
   { id: 35, name: "ارز ابو كاس 1 كيلو", unit: "1 كغم", category: "basmati_rice", priceRetail: 1.400, priceWholesale: 0, costPrice: 1.300, image: "https://i.ibb.co/hF22vqhV/f53a72828ad6.webp" },
@@ -2275,13 +2284,54 @@ const PRODUCTS_DATA = [
   { id: 44, name: "صن جولد ارز متوسط الحبة 3.5 كغم", unit: "3.5 كغم", category: "medium_rice", priceRetail: 3.350, priceWholesale: 0, costPrice: 3.250, image: "" },
   { id: 45, name: "ارز صن بيرد متوسط الحبة 9 كغم", unit: "9 كغم", category: "medium_rice", priceRetail: 7.600, priceWholesale: 0, costPrice: 7.500, image: "https://i.ibb.co/d0vK4Lm2/34861129682d.webp" },
   { id: 46, name: "ارز مستر وايت متوسط الحبة 3.5 كغم", unit: "3.5 كغم", category: "medium_rice", priceRetail: 2.850, priceWholesale: 0, costPrice: 2.750, image: "" },
-  { id: 47, name: "ارز صن بيرد متوسط الحبة 3 كغم", unit: "3 كغم", category: "medium_rice", priceRetail: 2.990, priceWholesale: 0, costPrice: 2.890, image: "" },
+  { id: 47, name: "ارز صن بيرد متوسط الحبة 3 كغم", unit: "3 كغم", category: "medium_rice", priceRetail: 2.990, priceWholesale: 0, costPrice: 2.890, image: "https://i.ibb.co/Z6WCMBDB/5d066b7872c2.webp" },
   { id: 48, name: "المعلم ارز بسمتي 3.5 كغم", unit: "3.5 كغم", category: "basmati_rice", priceRetail: 3.500, priceWholesale: 0, costPrice: 3.400, image: "" },
   { id: 49, name: "ارز صن بيرد متوسط الحبة 3.5 كغم", unit: "3.5 كغم", category: "medium_rice", priceRetail: 3.090, priceWholesale: 0, costPrice: 2.990, image: "https://i.ibb.co/Z6WCMBDB/5d066b7872c2.webp" },
   { id: 50, name: "شهد ارز 3.5 كغم", unit: "3.5 كغم", category: "medium_rice", priceRetail: 3.290, priceWholesale: 0, costPrice: 3.190, image: "" },
-  { id: 51, name: "ارز تايجر متوسط 6.7 كغم", unit: "6.7 كغم", category: "medium_rice", priceRetail: 6.090, priceWholesale: 0, costPrice: 5.990, image: "" },
+  { id: 51, name: "ارز تايجر متوسط 6.7 كغم", unit: "6.7 كغم", category: "medium_rice", priceRetail: 6.090, priceWholesale: 0, costPrice: 5.990, image: "https://i.ibb.co/V0gsRxHS/3404421a0a22.webp" },
   { id: 52, name: "ارز صنوايت 1 كغم ازرق", unit: "1 كغم", category: "medium_rice", priceRetail: 1.590, priceWholesale: 0, costPrice: 1.490, image: "" },
   { id: 53, name: "ارز الاميرة بسمتي 3.5 كغم", unit: "3.5 كغم", category: "basmati_rice", priceRetail: 3.490, priceWholesale: 0, costPrice: 3.390, image: "" },
+  { id: 54, name: "الشروق زيت دوار الشمس 2.7 لتر", unit: "2.7 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 4.590, priceWholesale: 0, costPrice: 4.490, image: "" },
+  { id: 55, name: "زيت شمس دوار الشمس 2.9 لتر", unit: "2.9 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 4.590, priceWholesale: 0, costPrice: 4.490, image: "https://i.ibb.co/rGWPzndq/e8d9acace6d0.webp" },
+  { id: 56, name: "مازولا زيت دوار الشمس 1.5 لتر", unit: "1.5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 2.850, priceWholesale: 0, costPrice: 2.750, image: "" },
+  { id: 57, name: "العامر زيت دوار الشمس 500 مل", unit: "500 مل", category: "oil_ghee", sub: "sunflower", priceRetail: 0.890, priceWholesale: 0, costPrice: 0.790, image: "https://i.ibb.co/gFSBgyVB/b5f82a27430c.webp" },
+  { id: 58, name: "ريتاج زيت دوار الشمس 14 لتر", unit: "14 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 19.850, priceWholesale: 0, costPrice: 19.750, image: "" },
+  { id: 59, name: "مازولا زيت دوار الشمس 9 لتر", unit: "9 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 15.590, priceWholesale: 0, costPrice: 15.490, image: "" },
+  { id: 60, name: "صني زيت دوار الشمس 5 لتر", unit: "5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 7.990, priceWholesale: 0, costPrice: 7.890, image: "" },
+  { id: 61, name: "العامر زيت دوار الشمس 3.5 لتر", unit: "3.5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 5.350, priceWholesale: 0, costPrice: 5.250, image: "https://i.ibb.co/rRZqdsgK/14dff5e572a6.webp" },
+  { id: 62, name: "شعبان زيت دوار الشمس 5 لتر", unit: "5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 7.850, priceWholesale: 0, costPrice: 7.750, image: "" },
+  { id: 63, name: "زيت شمس دوار الشمس 5 لتر", unit: "5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 8.090, priceWholesale: 0, costPrice: 7.990, image: "https://i.ibb.co/C5KpsxVY/55e25a8920ac.webp" },
+  { id: 64, name: "عافية زيت دوار الشمس 9 لتر", unit: "9 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 16.590, priceWholesale: 0, costPrice: 16.490, image: "https://i.ibb.co/f6zd68g/59c381a879a2.webp" },
+  { id: 65, name: "ليزا زيت دوار الشمس 2.9 لتر", unit: "2.9 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 4.590, priceWholesale: 0, costPrice: 4.490, image: "https://i.ibb.co/MDTTrF9F/2c9986c90518.webp" },
+  { id: 66, name: "العامر زيت دوار الشمس 8 لتر", unit: "8 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 11.600, priceWholesale: 0, costPrice: 11.500, image: "https://i.ibb.co/spMfbGhJ/6cb3de1b8dc0.webp" },
+  { id: 67, name: "ليزا زيت دوار الشمس 1.5 لتر", unit: "1.5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 2.590, priceWholesale: 0, costPrice: 2.490, image: "https://i.ibb.co/XZ3kTxXx/6e67d208f9b1.webp" },
+  { id: 68, name: "العامر زيت دوار الشمس 1.3 لتر", unit: "1.3 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 2.090, priceWholesale: 0, costPrice: 1.990, image: "" },
+  { id: 69, name: "مازولا زيت دوار الشمس 3 لتر", unit: "3 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 5.350, priceWholesale: 0, costPrice: 5.250, image: "" },
+  { id: 70, name: "عافية زيت دوار الشمس 2.9 لتر", unit: "2.9 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 5.600, priceWholesale: 0, costPrice: 5.500, image: "https://i.ibb.co/21vXq0k0/e6794d3f2a23.webp" },
+  { id: 71, name: "ريتاج زيت دوار الشمس 1.5 لتر", unit: "1.5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 2.590, priceWholesale: 0, costPrice: 2.490, image: "https://i.ibb.co/VWX3hr4C/a17f8f7442c6.webp" },
+  { id: 72, name: "شعبان زيت دوار الشمس 2.6 لتر", unit: "2.6 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 4.390, priceWholesale: 0, costPrice: 4.290, image: "" },
+  { id: 73, name: "صني زيت دوار الشمس 2.7 لتر", unit: "2.7 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 4.590, priceWholesale: 0, costPrice: 4.490, image: "https://i.ibb.co/NnkBV1dp/a5f69f7ad568.webp" },
+  { id: 74, name: "زيت شمس دوار الشمس 1.5 لتر", unit: "1.5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 2.590, priceWholesale: 0, costPrice: 2.490, image: "https://i.ibb.co/rGWPzndq/e8d9acace6d0.webp" },
+  { id: 75, name: "شعبان زيت دوار الشمس 1.3 لتر", unit: "1.3 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 2.450, priceWholesale: 0, costPrice: 2.350, image: "" },
+  { id: 76, name: "صني زيت دوار الشمس 1.5 لتر", unit: "1.5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 2.590, priceWholesale: 0, costPrice: 2.490, image: "https://i.ibb.co/NnkBV1dp/a5f69f7ad568.webp" },
+  { id: 77, name: "ريتاج زيت دوار الشمس 1.3 لتر", unit: "1.3 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 2.090, priceWholesale: 0, costPrice: 1.990, image: "https://i.ibb.co/93yDyC1k/f42fe8f30c84.webp" },
+  { id: 78, name: "عافية زيت دوار الشمس 1.5 لتر", unit: "1.5 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 2.790, priceWholesale: 0, costPrice: 2.690, image: "https://i.ibb.co/M5V2xkJM/bb914a7a4462.webp" },
+  { id: 79, name: "زيت شمس دوار الشمس 9 لتر", unit: "9 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 14.090, priceWholesale: 0, costPrice: 13.990, image: "https://i.ibb.co/G4hGc486/ef83bd5c2e25.webp" },
+  { id: 80, name: "العامر زيت دوار الشمس 2.7 لتر", unit: "2.7 لتر", category: "oil_ghee", sub: "sunflower", priceRetail: 4.450, priceWholesale: 0, costPrice: 4.350, image: "" },
+  { id: 81, name: "ريتاج زيت ذرة 8 لتر", unit: "8 لتر", category: "oil_ghee", sub: "corn", priceRetail: 12.590, priceWholesale: 0, costPrice: 12.490, image: "https://i.ibb.co/35rBzZ4Q/80fbed967428.webp" },
+  { id: 82, name: "مازولا زيت ذرة 9 لتر", unit: "9 لتر", category: "oil_ghee", sub: "corn", priceRetail: 20.090, priceWholesale: 0, costPrice: 19.990, image: "" },
+  { id: 83, name: "مازولا زيت ذرة 3 لتر", unit: "3 لتر", category: "oil_ghee", sub: "corn", priceRetail: 7.590, priceWholesale: 0, costPrice: 7.490, image: "" },
+  { id: 84, name: "العامر زيت ذرة 1.3 لتر", unit: "1.3 لتر", category: "oil_ghee", sub: "corn", priceRetail: 2.290, priceWholesale: 0, costPrice: 2.190, image: "" },
+  { id: 85, name: "عافية زيت ذرة 1.5 لتر", unit: "1.5 لتر", category: "oil_ghee", sub: "corn", priceRetail: 3.850, priceWholesale: 0, costPrice: 3.750, image: "https://i.ibb.co/fzGvvsGf/e0f59933cf4f.webp" },
+  { id: 86, name: "العامر زيت ذرة 2.7 لتر", unit: "2.7 لتر", category: "oil_ghee", sub: "corn", priceRetail: 4.590, priceWholesale: 0, costPrice: 4.490, image: "" },
+  { id: 87, name: "ريتاج زيت ذرة 3.5 لتر", unit: "3.5 لتر", category: "oil_ghee", sub: "corn", priceRetail: 5.900, priceWholesale: 0, costPrice: 5.800, image: "https://i.ibb.co/673W1g5H/32ac267d94da.webp" },
+  { id: 88, name: "مازولا زيت ذرة 1.5 لتر", unit: "1.5 لتر", category: "oil_ghee", sub: "corn", priceRetail: 3.590, priceWholesale: 0, costPrice: 3.490, image: "" },
+  { id: 89, name: "عافية زيت ذرة 2.9 لتر", unit: "2.9 لتر", category: "oil_ghee", sub: "corn", priceRetail: 7.090, priceWholesale: 0, costPrice: 6.990, image: "https://i.ibb.co/fzGvvsGf/e0f59933cf4f.webp" },
+  { id: 90, name: "العامر زيت صويا 18 لتر", unit: "18 لتر", category: "oil_ghee", sub: "soy", priceRetail: 23.090, priceWholesale: 0, costPrice: 22.990, image: "" },
+  { id: 91, name: "الجزيرة زيت زيتون 2 لتر", unit: "2 لتر", category: "oil_ghee", sub: "olive", priceRetail: 9.600, priceWholesale: 0, costPrice: 9.500, image: "https://i.ibb.co/pvnqzy0d/1331ff30ae18.webp" },
+  { id: 92, name: "الجزيرة زيت زيتون 3 لتر", unit: "3 لتر", category: "oil_ghee", sub: "olive", priceRetail: 14.100, priceWholesale: 0, costPrice: 14.000, image: "https://i.ibb.co/pvnqzy0d/1331ff30ae18.webp" },
+  { id: 93, name: "الجزيرة زيت زيتون 4 لتر", unit: "4 لتر", category: "oil_ghee", sub: "olive", priceRetail: 16.590, priceWholesale: 0, costPrice: 16.490, image: "https://i.ibb.co/pvnqzy0d/1331ff30ae18.webp" },
+  { id: 94, name: "كريستال سمنة 700 غم", unit: "700 غم", category: "oil_ghee", sub: "ghee", priceRetail: 1.590, priceWholesale: 0, costPrice: 1.490, image: "" },
 ];
 
 // ربط الصنفين الجدد بقسم "مستودع الأصيل ( ١ )"
@@ -6125,6 +6175,17 @@ function renderItemsView(){
         color:${activeSub===s.key ? '#fff' : 'var(--ink)'};
       ">${s.name}</button>`).join('');
     if(activeSub !== 'all') subset = subset.filter(p => p.category === activeSub);
+  } else if(activeCat === 'oil_ghee' && !searchQuery){
+    subBar.style.display = 'flex';
+    subBar.innerHTML = OIL_GHEE_SUBCATS.map(s => `
+      <button onclick="setOilGheeSub('${s.key}')" style="
+        flex-shrink:0; padding:7px 16px; border-radius:20px; font-family:'Tajawal',sans-serif;
+        font-size:13px; font-weight:700; cursor:pointer; transition:0.2s;
+        border:1.5px solid ${activeSub===s.key ? 'var(--green)' : 'var(--line)'};
+        background:${activeSub===s.key ? 'var(--green)' : '#fff'};
+        color:${activeSub===s.key ? '#fff' : 'var(--ink)'};
+      ">${s.name}</button>`).join('');
+    if(activeSub !== 'all') subset = subset.filter(p => p.sub === activeSub);
   } else {
     subBar.style.display = 'none';
   }
@@ -6297,6 +6358,11 @@ function setDairySub(key){
 }
 
 function setRiceSugarSaltSub(key){
+  activeSub = key;
+  renderItemsView();
+}
+
+function setOilGheeSub(key){
   activeSub = key;
   renderItemsView();
 }
