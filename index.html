@@ -1439,7 +1439,9 @@ async function initFirestoreSync(){
     console.error('تعذّر الاتصال بـ Firebase:', err);
   }
 }
-initFirestoreSync();
+// 🚧 مؤقتاً معطّل أثناء إعادة بناء الأصناف يدوياً من الكود (تفادياً لأي تداخل/فلاش من بيانات قديمة بالـ Firestore أو الكاش).
+// لما نخلص كل الأقسام، نرجّع نفعّل هالسطر (نشيل التعليق) عشان نرحّل كل بيانات الملف لقاعدة البيانات الحية دفعة وحدة.
+// initFirestoreSync();
 wireImageFileInput('qe_image_file', 'qe_image', 'qe_image_preview');
 if ('serviceWorker' in navigator){
   window.addEventListener('load', () => {
@@ -1539,6 +1541,13 @@ const DAIRY_SUBCATS = [
   { key: "cheese", name: "الأجبان" },
   { key: "cream",  name: "القشطة" },
   { key: "jameed", name: "الجميد" }
+];
+const RICE_SUGAR_SALT_SUBCATS = [
+  { key: "all",          name: "الكل" },
+  { key: "basmati_rice", name: "أرز بسمتي" },
+  { key: "medium_rice",  name: "أرز متوسط الحبة" },
+  { key: "sugar",        name: "سكر" },
+  { key: "salt",         name: "ملح" }
 ];
 let activeSub = "all";
 // أي عرض بقسم المفرق مفتوح حالياً بشاشة التفاصيل (null = عم نعرض قائمة العروض الأفقية)
@@ -6079,6 +6088,17 @@ function renderItemsView(){
         color:${activeSub===s.key ? '#fff' : 'var(--ink)'};
       ">${s.name}</button>`).join('');
     if(activeSub !== 'all') subset = subset.filter(p => p.sub === activeSub);
+  } else if(activeCat === 'group::rice_sugar_salt' && !searchQuery){
+    subBar.style.display = 'flex';
+    subBar.innerHTML = RICE_SUGAR_SALT_SUBCATS.map(s => `
+      <button onclick="setRiceSugarSaltSub('${s.key}')" style="
+        flex-shrink:0; padding:7px 16px; border-radius:20px; font-family:'Tajawal',sans-serif;
+        font-size:13px; font-weight:700; cursor:pointer; transition:0.2s;
+        border:1.5px solid ${activeSub===s.key ? 'var(--green)' : 'var(--line)'};
+        background:${activeSub===s.key ? 'var(--green)' : '#fff'};
+        color:${activeSub===s.key ? '#fff' : 'var(--ink)'};
+      ">${s.name}</button>`).join('');
+    if(activeSub !== 'all') subset = subset.filter(p => p.category === activeSub);
   } else {
     subBar.style.display = 'none';
   }
@@ -6246,6 +6266,11 @@ function renderItemsView(){
 }
 
 function setDairySub(key){
+  activeSub = key;
+  renderItemsView();
+}
+
+function setRiceSugarSaltSub(key){
   activeSub = key;
   renderItemsView();
 }
@@ -7017,6 +7042,11 @@ function custBotOther(){ return custBotPersona.key === 'aseel' ? CUST_BOT_PERSON
 function updateCustBotVisibility(){
   const bubble = document.getElementById('custBotBubble');
   if (!bubble) return;
+  // 🚫 بوت أصيل/آيلا العائم متوقف حالياً بناءً على طلب صاحبة الموقع (معطّل هون بس، الكود لسا موجود لو حبينا نرجعه لاحقاً)
+  bubble.style.display = 'none';
+  hideCustBotGreeting();
+  hideCustBotIdleHint();
+  return;
   const shouldShow = !adminEditMode && appMode === 'store' && !window._custBotDismissedForSession;
   if (shouldShow){
     if (bubble.style.display !== 'flex'){
