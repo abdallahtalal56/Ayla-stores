@@ -1271,6 +1271,42 @@ function isSyncableImage(img){
   return !!img && !img.startsWith('data:');
 }
 
+// ===== حذف كل الأصناف نهائياً من Firestore (منطقة خطر بلوحة التحكم) =====
+async function wipeAllProducts(){
+  const resultEl = document.getElementById('wipeAllProductsResult');
+  const btn = document.getElementById('wipeAllProductsBtn');
+  if (!confirm('⚠️ متأكدة إنك بدك تحذفي كل الأصناف من كل الأقسام نهائياً؟ هاد الإجراء ما إله رجعة!')) return;
+  const typed = prompt('عشان نتأكد، اكتبي كلمة "حذف" بالضبط وضغطي موافق:');
+  if (typed !== 'حذف'){
+    if (resultEl) resultEl.textContent = 'تم الإلغاء — ما انحذف شي.';
+    return;
+  }
+  if (btn){ btn.disabled = true; btn.textContent = '⏳ جاري الحذف...'; }
+  if (resultEl) resultEl.textContent = 'جاري حذف كل الأصناف من قاعدة البيانات، الرجاء الانتظار...';
+  try {
+    let totalDeleted = 0;
+    // بنمسح على دفعات (Firestore بيسمح بحد أقصى 500 عملية بكل batch)
+    while (true){
+      const snap = await db.collection('retailProducts').limit(400).get();
+      if (snap.empty) break;
+      const batch = db.batch();
+      snap.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      totalDeleted += snap.docs.length;
+      if (resultEl) resultEl.textContent = `تم حذف ${totalDeleted} صنف لحد الآن...`;
+    }
+    // تنظيف النسخة المحلية بالمتصفح (الكاش) وبالذاكرة
+    PRODUCTS_DATA.length = 0;
+    try { localStorage.removeItem(PRODUCTS_CACHE_KEY); } catch(e){}
+    if (typeof renderApp === 'function') renderApp();
+    if (resultEl) resultEl.textContent = `✅ تم حذف ${totalDeleted} صنف بنجاح. كل الأقسام صارت فاضية الآن.`;
+  } catch(e){
+    if (resultEl) resultEl.textContent = '❌ صار خطأ أثناء الحذف: ' + (e && e.message ? e.message : e);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = '🗑️ حذف كل الأصناف من كل الأقسام'; }
+  }
+}
+
 async function seedFirestoreFromLocalData(){
   const batchSize = 400;
   for (let i = 0; i < PRODUCTS_DATA.length; i += batchSize){
@@ -1280,9 +1316,10 @@ async function seedFirestoreFromLocalData(){
       const docData = {
         name: p.name, unit: p.unit, category: p.category,
         priceRetail: p.priceRetail || 0, priceWholesale: p.priceWholesale || 0,
-        pendingApproval: true, // أصناف الاستيراد الأولي بانتظار موافقة الأدمن قبل ما تظهر للزبون
+        pendingApproval: false, // بلشنا نسعّر ونعبّي الأصناف يدوياً بأسعار حقيقية، فبتظهر للزبون فوراً بدون خطوة موافقة إضافية
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
+      if (p.costPrice !== undefined) docData.costPrice = p.costPrice;
       if (isSyncableImage(p.image)) docData.image = p.image;
       batch.set(ref, docData, { merge: true });
     });
@@ -2182,7 +2219,35 @@ function moveCompanyOrder(name, direction){
 const WHOLESALE_CATS_ORDER = [...RETAIL_CATS_ORDER];
 
 // مستودع البضائع والأصناف
-const PRODUCTS_DATA = [];
+const PRODUCTS_DATA = [
+  { id: 1, name: "اسامة ارز هندي حبة طويلة 3.5 كغم", unit: "3.5 كغم", category: "basmati_rice", priceRetail: 4.090, priceWholesale: 0, costPrice: 3.890, image: "" },
+  { id: 2, name: "مندي ارز بسمتي 7 كغم", unit: "7 كغم", category: "basmati_rice", priceRetail: 7.350, priceWholesale: 0, costPrice: 7.150, image: "" },
+  { id: 3, name: "لوندي شيف ارز بسمتي حبة طويلة 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 4.190, priceWholesale: 0, costPrice: 3.990, image: "" },
+  { id: 4, name: "ارز مصطفى بسمتي 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 4.790, priceWholesale: 0, costPrice: 4.590, image: "https://i.ibb.co/HLhbDqH1/b7ee9d545263.webp" },
+  { id: 5, name: "الشعلان ارز علمين 2 كغم", unit: "2 كغم", category: "basmati_rice", priceRetail: 3.190, priceWholesale: 0, costPrice: 2.990, image: "" },
+  { id: 6, name: "ارز تايجر بسمتي 8.7 كغم", unit: "8.7 كغم", category: "basmati_rice", priceRetail: 7.700, priceWholesale: 0, costPrice: 7.500, image: "" },
+  { id: 7, name: "محمود ارز بسمتي 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 3.900, priceWholesale: 0, costPrice: 3.700, image: "https://i.ibb.co/nssLRP57/0f37332138bc.webp" },
+  { id: 8, name: "المندي ارز بسمتي 900 غم", unit: "900 غم", category: "basmati_rice", priceRetail: 1.550, priceWholesale: 0, costPrice: 1.350, image: "https://i.ibb.co/bRgg4w4x/2d9250712537.webp" },
+  { id: 9, name: "ارز ابو كاس بسمتي 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 4.450, priceWholesale: 0, costPrice: 4.250, image: "https://i.ibb.co/qMpCkzrK/9550a514d8cc.webp" },
+  { id: 10, name: "ارز شعلان ازرق 5 كغم", unit: "5 كغم", category: "basmati_rice", priceRetail: 5.190, priceWholesale: 0, costPrice: 4.990, image: "" },
+  { id: 11, name: "ارز شعلان بسمتي احمر 5 كغم", unit: "5 كغم", category: "basmati_rice", priceRetail: 6.150, priceWholesale: 0, costPrice: 5.950, image: "" },
+  { id: 12, name: "الدرة ارز بسمتي 3.5 كغم", unit: "3.5 كغم", category: "basmati_rice", priceRetail: 3.190, priceWholesale: 0, costPrice: 2.990, image: "" },
+  { id: 13, name: "ارز حبة طويلة ابو البنت 1 كغم", unit: "1 كغم", category: "basmati_rice", priceRetail: 1.450, priceWholesale: 0, costPrice: 1.250, image: "" },
+  { id: 14, name: "ارز مندي بسمتي 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 4.390, priceWholesale: 0, costPrice: 4.190, image: "https://i.ibb.co/HfLWZyHk/77c94888fb2f.webp" },
+  { id: 15, name: "مستانة ارز بسمتي 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 5.190, priceWholesale: 0, costPrice: 4.990, image: "https://i.ibb.co/rRz9Wt4F/3629724f9477.webp" },
+  { id: 16, name: "ارز مستر وايت بسمتي 3.5 كغم", unit: "3.5 كغم", category: "basmati_rice", priceRetail: 3.190, priceWholesale: 0, costPrice: 2.990, image: "" },
+  { id: 17, name: "ارز الملك بسمتي 5 كغم", unit: "5 كغم", category: "basmati_rice", priceRetail: 8.700, priceWholesale: 0, costPrice: 8.500, image: "" },
+  { id: 18, name: "ابو البنت ارز متوسط الحبة كالروز 3.5 كغم", unit: "3.5 كغم", category: "medium_rice", priceRetail: 3.550, priceWholesale: 0, costPrice: 3.350, image: "https://i.ibb.co/dwxgpPJY/2ba0d69ed949.webp" },
+  { id: 19, name: "سراج ارز كريمي 3.5 كغم", unit: "3.5 كغم", category: "basmati_rice", priceRetail: 2.390, priceWholesale: 0, costPrice: 2.190, image: "" },
+  { id: 20, name: "بركة زادي ارز بسمتي 3.5 كغم", unit: "3.5 كغم", category: "basmati_rice", priceRetail: 3.690, priceWholesale: 0, costPrice: 3.490, image: "" },
+  { id: 21, name: "الباشا ارز كريمي 900 غم", unit: "900 غم", category: "basmati_rice", priceRetail: 0.950, priceWholesale: 0, costPrice: 0.750, image: "" },
+  { id: 22, name: "الشعلان ارز علمين 1 كغم", unit: "1 كغم", category: "basmati_rice", priceRetail: 1.800, priceWholesale: 0, costPrice: 1.600, image: "" },
+  { id: 23, name: "وادي اندس ارز بسمتي طويل الحبة 900 غم", unit: "900 غم", category: "basmati_rice", priceRetail: 1.900, priceWholesale: 0, costPrice: 1.700, image: "" },
+  { id: 24, name: "دورو ارز بسمتي 1 كغم", unit: "1 كغم", category: "basmati_rice", priceRetail: 1.900, priceWholesale: 0, costPrice: 1.700, image: "" },
+  { id: 25, name: "ارز ابو البنت حبة طويلة بسمتي 4 كغم", unit: "4 كغم", category: "basmati_rice", priceRetail: 4.800, priceWholesale: 0, costPrice: 4.600, image: "" },
+  { id: 26, name: "ارز تايجر بسمتي 6.7 كغم", unit: "6.7 كغم", category: "basmati_rice", priceRetail: 6.090, priceWholesale: 0, costPrice: 5.890, image: "" },
+  { id: 27, name: "ارز تايجر بسمتي 3 كغم", unit: "3 كغم", category: "basmati_rice", priceRetail: 2.890, priceWholesale: 0, costPrice: 2.690, image: "" },
+];
 
 // ربط الصنفين الجدد بقسم "مستودع الأصيل ( ١ )"
 [739,740].forEach(_id => {
@@ -3018,6 +3083,15 @@ function renderAdminProductList(){
       <div style="margin-top:12px;">
       <div style="color:#ccc; font-size:11px; margin-bottom:8px;">مثالية لروتين "كل 10 أيام" — ملف واحد فيه كل شي: الأصناف، الشركات، آخر 500 طلب، وكل أرقام الزوار. احفظيه قبل أي تحديث كود جديد.</div>
       <button id="fullBackupBtn" onclick="downloadFullBackup()" style="width:100%; padding:10px; border-radius:8px; border:none; background:var(--gold); color:#3A2F1B; font-weight:900; font-size:14px;">⬇️ تحميل نسخة شاملة الآن (أصناف + شركات + طلبات + زوار)</button>
+      </div>
+    </details>
+
+    <details style="background:#5A1F1F; border-radius:12px; padding:14px; margin-bottom:14px; border:1px solid #A3453A;">
+      <summary style="color:#FF8A80; font-weight:800; font-size:14px; cursor:pointer;">🗑️ منطقة خطر — حذف كل الأصناف نهائياً</summary>
+      <div style="margin-top:12px;">
+      <div style="color:#ffcdd2; font-size:11.5px; margin-bottom:10px; line-height:1.6;">هاد بيمسح <b>كل الأصناف</b> من قاعدة البيانات (Firestore) نهائياً — كل الأقسام رح تصير فاضية بالكامل بدون ولا صنف. الإجراء ما إله رجعة إلا لو عندك نسخة احتياطية محفوظة. لا تستخدميه إلا لو متأكدة 100%.</div>
+      <button id="wipeAllProductsBtn" onclick="wipeAllProducts()" style="width:100%; padding:10px; border-radius:8px; border:none; background:#C9584B; color:#fff; font-weight:900; font-size:14px;">🗑️ حذف كل الأصناف من كل الأقسام</button>
+      <div id="wipeAllProductsResult" style="margin-top:8px; font-size:12px; color:#ffcdd2;"></div>
       </div>
     </details>
 
