@@ -7016,6 +7016,21 @@ function recordVisitor(phone, name, isNewDevice, type, regImage, location){
   try {
     db.collection('settings').doc('visitCounter').set({ count: firebase.firestore.FieldValue.increment(1) }, { merge: true }).catch(()=>{});
   } catch(e){}
+  // ===== إشعار فوري على Discord بمعلومات كل زائر جديد يسجّل لأول مرة =====
+  if (isNewDevice){
+    try {
+      const typeLabel = type === 'wholesale' ? '🏪 تاجر/جملة' : (type === 'retail' ? '🛒 مستهلك/مفرق' : (type || 'غير محدد'));
+      let msg = `🆕 زائر جديد سجّل بالتطبيق\n`
+        + `👤 الاسم: ${name || 'غير مدخل'}\n`
+        + `📞 الجوال: ${phone}\n`
+        + `🏷️ النوع: ${typeLabel}\n`;
+      if (location && location.lat && location.lng){
+        msg += `📍 الموقع: https://maps.google.com/?q=${location.lat},${location.lng}\n`;
+      }
+      msg += `🕒 الوقت: ${new Date().toLocaleString('ar-JO', { timeZone: 'Asia/Amman' })}`;
+      sendDiscordOrderNotification(msg);
+    } catch(e){ /* إشعار معلومات الزائر ما يجب يوقف عملية التسجيل حتى لو فشل */ }
+  }
 }
 
 // تصحيح نوع الحساب لو اختاره الزبون غلط (مثلاً تاجر ضغط "مستهلك" بالغلط) — بيمسح تسجيله ويرجعه لبوابة الدخول من جديد
