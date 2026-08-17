@@ -1341,10 +1341,14 @@ async function seedFirestoreFromLocalData(){
         name: p.name, unit: p.unit, category: p.category,
         priceRetail: p.priceRetail || 0, priceWholesale: p.priceWholesale || 0,
         pendingApproval: false, // بلشنا نسعّر ونعبّي الأصناف يدوياً بأسعار حقيقية، فبتظهر للزبون فوراً بدون خطوة موافقة إضافية
+        outOfStock: !!p.outOfStock,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       if (p.costPrice !== undefined) docData.costPrice = p.costPrice;
       if (isSyncableImage(p.image)) docData.image = p.image;
+      if (p.sub) docData.sub = p.sub;
+      if (p.subsub) docData.subsub = p.subsub;
+      if (p.company) docData.company = p.company;
       batch.set(ref, docData, { merge: true });
     });
     await batch.commit();
@@ -1355,7 +1359,7 @@ async function seedFirestoreFromLocalData(){
 // بدل ما نعيد قراءة كل الأصناف من الصفر بكل زيارة، نحفظ آخر نسخة بجهاز الزائر
 // ونشترك بس بالتغييرات الجديدة بعد آخر مزامنة (updatedAt). هذا يقلل الاستهلاك
 // اليومي بشكل كبير مع بقاء أي تعديل يظهر فوراً لكل الزوار.
-const PRODUCTS_CACHE_KEY = 'ayla_retail_products_overrides_v1';
+const PRODUCTS_CACHE_KEY = 'ayla_retail_products_overrides_v2'; // (رُفّعت النسخة عمداً عشان أي جهاز عنده كاش قديم من فترة توقف المزامنة يبلش نظيف)
 
 function loadProductsCache(){
   try {
@@ -2613,7 +2617,7 @@ const PRODUCTS_DATA = [
   { id: 95005, name: "فاميلي فطر 165غ", unit: "165 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 0.871, priceWholesale: 0, costPrice: 0.850, image: "" },
   { id: 95006, name: "جولدن فالي تونا بالزيت 120غ", unit: "120 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.408, priceWholesale: 0, costPrice: 0.398, image: "" },
   { id: 95007, name: "فول مدمس حدائق كاليفورنيا سادة 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.513, priceWholesale: 0, costPrice: 0.500, image: "" },
-  { id: 95008, name: "فول بيروتي بالخلطة اللبنانية 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "" },
+  { id: 95008, name: "فول بيروتي بالخلطة اللبنانية 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "https://www.albayrouty.com/web/image/product.template/21/image_1024" },
   { id: 95009, name: "الوفير فاصوليا بيضاء سادة", unit: "", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.359, priceWholesale: 0, costPrice: 0.350, image: "" },
   { id: 95010, name: "جون وست تونا بالزيت 170غ", unit: "170 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "https://suppystorage.blob.core.windows.net/valeur/items/63002_1.jpg" },
   { id: 95011, name: "جون ويست سردين بالماء 120غ", unit: "120 غ", category: "canned_goods", sub: "sardines", priceRetail: 0.923, priceWholesale: 0, costPrice: 0.900, image: "" },
@@ -2623,7 +2627,7 @@ const PRODUCTS_DATA = [
   { id: 95015, name: "بوستمان فطر مقطع 400غ", unit: "400 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 1.128, priceWholesale: 0, costPrice: 1.100, image: "" },
   { id: 95016, name: "الدرة حمص حب مسلوق 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.461, priceWholesale: 0, costPrice: 0.450, image: "" },
   { id: 95017, name: "فاصوليا بيضاء حدائق كاليفورنيا 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.666, priceWholesale: 0, costPrice: 0.650, image: "" },
-  { id: 95018, name: "البيروتي حمص بالطحينية عريض 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.513, priceWholesale: 0, costPrice: 0.500, image: "" },
+  { id: 95018, name: "البيروتي حمص بالطحينية عريض 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.513, priceWholesale: 0, costPrice: 0.500, image: "https://www.albayrouty.com/web/image/product.template/9/image_1024" },
   { id: 95019, name: "العلالي تونا 185غ سلطة خضار", unit: "185 غ", category: "canned_goods", sub: "tuna", priceRetail: 1.527, priceWholesale: 0, costPrice: 1.490, image: "" },
   { id: 95020, name: "العلالي تونا سكيب جاك بزيت دوار الشمس 85غ", unit: "85 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.769, priceWholesale: 0, costPrice: 0.750, image: "" },
   { id: 95021, name: "الصح لانشون لحمه 800غ", unit: "800 غ", category: "canned_goods", sub: "luncheon", priceRetail: 1.128, priceWholesale: 0, costPrice: 1.100, image: "" },
@@ -2632,7 +2636,7 @@ const PRODUCTS_DATA = [
   { id: 95024, name: "الصياد تونا بالفلفل الحار 160غ", unit: "160 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.718, priceWholesale: 0, costPrice: 0.700, image: "" },
   { id: 95025, name: "تونا جولدن فالي بزيت الصويا 120غ", unit: "120 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.461, priceWholesale: 0, costPrice: 0.450, image: "" },
   { id: 95026, name: "العلالي تونا شرائح 100غ مدخنة بزيت دوار الشمس", unit: "100 غ", category: "canned_goods", sub: "tuna", priceRetail: 1.435, priceWholesale: 0, costPrice: 1.400, image: "" },
-  { id: 95027, name: "فول+حمص بيروتي 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "" },
+  { id: 95027, name: "فول+حمص بيروتي 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "https://www.albayrouty.com/web/image/product.template/18/image_1024" },
   { id: 95028, name: "فاصولياء حمراء امريكان جاردن 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.769, priceWholesale: 0, costPrice: 0.750, image: "" },
   { id: 95029, name: "اكرام ذرة 400غ", unit: "400 غ", category: "canned_goods", sub: "corn", priceRetail: 0.666, priceWholesale: 0, costPrice: 0.650, image: "" },
   { id: 95030, name: "الكسيح فطر مقطع 380غ", unit: "380 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 1.220, priceWholesale: 0, costPrice: 1.190, image: "" },
@@ -2656,7 +2660,7 @@ const PRODUCTS_DATA = [
   { id: 95048, name: "جون ويست سردين بالبندورة 120غ", unit: "120 غ", category: "canned_goods", sub: "sardines", priceRetail: 0.923, priceWholesale: 0, costPrice: 0.900, image: "" },
   { id: 95049, name: "جون ويست سردين بدون عظم بزيت دوار الشمس 95غ", unit: "95 غ", category: "canned_goods", sub: "sardines", priceRetail: 1.220, priceWholesale: 0, costPrice: 1.190, image: "" },
   { id: 95050, name: "جون وست تونا بالماء 170غ", unit: "170 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "https://suppystorage.blob.core.windows.net/valeur/items/63004_1.jpg" },
-  { id: 95051, name: "البيروتي فطر حب 400غ", unit: "400 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 1.015, priceWholesale: 0, costPrice: 0.990, image: "" },
+  { id: 95051, name: "البيروتي فطر حب 400غ", unit: "400 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 1.015, priceWholesale: 0, costPrice: 0.990, image: "https://www.albayrouty.com/web/image/product.template/35/image_1024" },
   { id: 95052, name: "كرم فاصوليا بالصلصة 380غ", unit: "380 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.410, priceWholesale: 0, costPrice: 0.400, image: "" },
   { id: 95053, name: "فول جولدن فالي 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.231, priceWholesale: 0, costPrice: 0.225, image: "" },
   { id: 95054, name: "الاكرام فطر حب 400غ", unit: "400 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 1.025, priceWholesale: 0, costPrice: 1.000, image: "" },
@@ -2668,7 +2672,7 @@ const PRODUCTS_DATA = [
   { id: 95060, name: "البركة حمص بطحينية 135غ", unit: "135 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.308, priceWholesale: 0, costPrice: 0.300, image: "" },
   { id: 95061, name: "كرم حمص حب عريضة", unit: "", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.359, priceWholesale: 0, costPrice: 0.350, image: "" },
   { id: 95062, name: "حمص بالطحينية حدائق كاليفورنيا 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.615, priceWholesale: 0, costPrice: 0.600, image: "" },
-  { id: 95063, name: "بيروتي حمص حب 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.359, priceWholesale: 0, costPrice: 0.350, image: "" },
+  { id: 95063, name: "بيروتي حمص حب 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.359, priceWholesale: 0, costPrice: 0.350, image: "https://www.albayrouty.com/web/image/product.template/13/image_1024" },
   { id: 95064, name: "زلوم بازيلاء 380غ", unit: "380 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.308, priceWholesale: 0, costPrice: 0.300, image: "" },
   { id: 95065, name: "النعمة لانشون لحم 200غ", unit: "200 غ", category: "canned_goods", sub: "luncheon", priceRetail: 0.338, priceWholesale: 0, costPrice: 0.330, image: "" },
   { id: 95066, name: "نيولاند فطر مقطع نخب اول 400غ", unit: "400 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 1.220, priceWholesale: 0, costPrice: 1.190, image: "" },
@@ -2676,7 +2680,7 @@ const PRODUCTS_DATA = [
   { id: 95068, name: "جون ويست سردين بالبندورة الحارة 120غ", unit: "120 غ", category: "canned_goods", sub: "sardines", priceRetail: 0.923, priceWholesale: 0, costPrice: 0.900, image: "https://continentalfoodstore.co.uk/cdn/shop/files/JohnWest-SardinesSpicyTomatoSauce-120g.jpg" },
   { id: 95069, name: "العلالي تونا 185غ سلطة فاصوليا حمراء", unit: "185 غ", category: "canned_goods", sub: "tuna", priceRetail: 1.384, priceWholesale: 0, costPrice: 1.350, image: "" },
   { id: 95070, name: "العلالي تونا فاخر بالماء 85غ", unit: "85 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.912, priceWholesale: 0, costPrice: 0.890, image: "" },
-  { id: 95071, name: "البيروتي بابا غنوج متبل 370غ", unit: "370 غ", category: "canned_goods", sub: "other", priceRetail: 0.564, priceWholesale: 0, costPrice: 0.550, image: "" },
+  { id: 95071, name: "البيروتي بابا غنوج متبل 370غ", unit: "370 غ", category: "canned_goods", sub: "other", priceRetail: 0.564, priceWholesale: 0, costPrice: 0.550, image: "https://www.albayrouty.com/web/image/product.template/14/image_1024" },
   { id: 95072, name: "زلوم فول حبة كبيرة 390غ كيس", unit: "390 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.400, priceWholesale: 0, costPrice: 0.390, image: "" },
   { id: 95073, name: "الدره تونا سكيب جاك بالزيت 160غ", unit: "160 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.718, priceWholesale: 0, costPrice: 0.700, image: "" },
   { id: 95074, name: "البيروتي حمص بالطحينية 220غ", unit: "220 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.359, priceWholesale: 0, costPrice: 0.350, image: "" },
@@ -2685,7 +2689,7 @@ const PRODUCTS_DATA = [
   { id: 95077, name: "كرم فاصوليا بيضاء 380غ", unit: "380 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.410, priceWholesale: 0, costPrice: 0.400, image: "" },
   { id: 95078, name: "جون وست سلطة تونا بالعسل والزنجبيل 220غ", unit: "220 غ", category: "canned_goods", sub: "tuna", priceRetail: 2.040, priceWholesale: 0, costPrice: 1.990, image: "" },
   { id: 95079, name: "جون ويست سردين بزيت دوار الشمس 120غ", unit: "120 غ", category: "canned_goods", sub: "sardines", priceRetail: 0.923, priceWholesale: 0, costPrice: 0.900, image: "https://cdn.shopify.com/s/files/1/0787/8508/5783/files/e8816b5f-4edb-4ae7-b0ea-4d011f68c253_60f3c922-afca-418d-b37f-78ffe39d5fbd.jpg" },
-  { id: 95080, name: "البيروتي ذرة حلوة 340غ", unit: "340 غ", category: "canned_goods", sub: "corn", priceRetail: 0.718, priceWholesale: 0, costPrice: 0.700, image: "" },
+  { id: 95080, name: "البيروتي ذرة حلوة 340غ", unit: "340 غ", category: "canned_goods", sub: "corn", priceRetail: 0.718, priceWholesale: 0, costPrice: 0.700, image: "https://www.albayrouty.com/web/image/product.template/34/image_1024" },
   { id: 95081, name: "امريكانا فول اسكندراني 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.513, priceWholesale: 0, costPrice: 0.500, image: "" },
   { id: 95082, name: "العملاق الاخضر ذرة حلوة 340غ", unit: "340 غ", category: "canned_goods", sub: "corn", priceRetail: 0.912, priceWholesale: 0, costPrice: 0.890, image: "" },
   { id: 95083, name: "فطر مكسيم مشرح 425غ", unit: "425 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 1.384, priceWholesale: 0, costPrice: 1.350, image: "" },
@@ -2699,14 +2703,14 @@ const PRODUCTS_DATA = [
   { id: 95091, name: "نيولاند فاصوليا سوداء امريكي 425غ", unit: "425 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 1.281, priceWholesale: 0, costPrice: 1.250, image: "" },
   { id: 95092, name: "زلوم فاصوليا بيضاء بالصلصة 380غ", unit: "380 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.400, priceWholesale: 0, costPrice: 0.390, image: "" },
   { id: 95093, name: "الكسيح متبل باذنجان بالطحينية 135غ", unit: "135 غ", category: "canned_goods", sub: "veg_other", priceRetail: 0.564, priceWholesale: 0, costPrice: 0.550, image: "" },
-  { id: 95094, name: "خضار مشكلة بيروتي 400غ", unit: "400 غ", category: "canned_goods", sub: "veg_other", priceRetail: 0.461, priceWholesale: 0, costPrice: 0.450, image: "" },
-  { id: 95095, name: "البيروتي حمص بالشطة 380غ", unit: "380 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.461, priceWholesale: 0, costPrice: 0.450, image: "" },
-  { id: 95096, name: "البيروتي مسبحة بالطحينية 380غ", unit: "380 غ", category: "canned_goods", sub: "other", priceRetail: 0.502, priceWholesale: 0, costPrice: 0.490, image: "" },
+  { id: 95094, name: "خضار مشكلة بيروتي 400غ", unit: "400 غ", category: "canned_goods", sub: "veg_other", priceRetail: 0.461, priceWholesale: 0, costPrice: 0.450, image: "https://www.albayrouty.com/web/image/product.template/31/image_1024" },
+  { id: 95095, name: "البيروتي حمص بالشطة 380غ", unit: "380 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.461, priceWholesale: 0, costPrice: 0.450, image: "https://www.albayrouty.com/web/image/product.template/11/image_1024" },
+  { id: 95096, name: "البيروتي مسبحة بالطحينية 380غ", unit: "380 غ", category: "canned_goods", sub: "other", priceRetail: 0.502, priceWholesale: 0, costPrice: 0.490, image: "https://www.albayrouty.com/web/image/product.template/12/image_1024" },
   { id: 95097, name: "تونا ALLTASTY بالزيت 170غ", unit: "170 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.769, priceWholesale: 0, costPrice: 0.750, image: "" },
   { id: 95098, name: "العلالي تونا شرائح بالماء 100غ", unit: "100 غ", category: "canned_goods", sub: "tuna", priceRetail: 1.435, priceWholesale: 0, costPrice: 1.400, image: "" },
   { id: 95099, name: "العلالي تونا فاخر بالماء 170غ", unit: "170 غ", category: "canned_goods", sub: "tuna", priceRetail: 1.435, priceWholesale: 0, costPrice: 1.400, image: "" },
   { id: 95100, name: "تونا ALLTASTY بالفلفل 170غ", unit: "170 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.769, priceWholesale: 0, costPrice: 0.750, image: "" },
-  { id: 95101, name: "البيروتي بازيلا مع جزر 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.410, priceWholesale: 0, costPrice: 0.400, image: "" },
+  { id: 95101, name: "البيروتي بازيلا مع جزر 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.410, priceWholesale: 0, costPrice: 0.400, image: "https://www.albayrouty.com/web/image/product.template/33/image_1024" },
   { id: 95102, name: "افكو فطر شرائح 400غ", unit: "400 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 1.015, priceWholesale: 0, costPrice: 0.990, image: "" },
   { id: 95103, name: "الدرة ورق عنب محشي 400غ", unit: "400 غ", category: "canned_goods", sub: "grape_leaves", priceRetail: 1.794, priceWholesale: 0, costPrice: 1.750, image: "https://files.cdn-files-a.com/uploads/4243108/800_678f4e9ace791.jpg" },
   { id: 95104, name: "افكو ذرة حب مع غطاء ومعلقة 185غ", unit: "185 غ", category: "canned_goods", sub: "corn", priceRetail: 0.769, priceWholesale: 0, costPrice: 0.750, image: "" },
@@ -2720,7 +2724,7 @@ const PRODUCTS_DATA = [
   { id: 95112, name: "تيستي فطر حب كامل 400غ", unit: "400 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 1.025, priceWholesale: 0, costPrice: 1.000, image: "" },
   { id: 95113, name: "افكو تونا تونغل يلوفين ابيض بزيت الصويا 90غ", unit: "90 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.666, priceWholesale: 0, costPrice: 0.650, image: "" },
   { id: 95114, name: "اكرام تونا قطع ماء وملح 160غ", unit: "160 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.707, priceWholesale: 0, costPrice: 0.690, image: "" },
-  { id: 95115, name: "فول بيروتي بالخلطة المصرية 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "" },
+  { id: 95115, name: "فول بيروتي بالخلطة المصرية 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "https://www.albayrouty.com/web/image/product.template/22/image_1024" },
   { id: 95116, name: "فول مدمس امريكان جاردن 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.718, priceWholesale: 0, costPrice: 0.700, image: "" },
   { id: 95117, name: "امريكانا فول مقشور بالفلفل الحار 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.513, priceWholesale: 0, costPrice: 0.500, image: "" },
   { id: 95118, name: "اكرام تونا قطع بالزيت 160غ", unit: "160 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.707, priceWholesale: 0, costPrice: 0.690, image: "" },
@@ -2728,8 +2732,8 @@ const PRODUCTS_DATA = [
   { id: 95120, name: "المحيط سردين بالزيت 100غ", unit: "100 غ", category: "canned_goods", sub: "sardines", priceRetail: 0.308, priceWholesale: 0, costPrice: 0.300, image: "" },
   { id: 95121, name: "جون ويست سردين بدون عظم بزيت الزيتون 95غ", unit: "95 غ", category: "canned_goods", sub: "sardines", priceRetail: 1.486, priceWholesale: 0, costPrice: 1.450, image: "" },
   { id: 95122, name: "العلالي تونا 160غ بالكبسة", unit: "160 غ", category: "canned_goods", sub: "tuna", priceRetail: 1.691, priceWholesale: 0, costPrice: 1.650, image: "" },
-  { id: 95123, name: "فول بيروتي حبة صغيرة 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "" },
-  { id: 95124, name: "البيروتي فاصوليا بالصلصة 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.461, priceWholesale: 0, costPrice: 0.450, image: "" },
+  { id: 95123, name: "فول بيروتي حبة صغيرة 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "https://www.albayrouty.com/web/image/product.template/15/image_1024" },
+  { id: 95124, name: "البيروتي فاصوليا بالصلصة 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.461, priceWholesale: 0, costPrice: 0.450, image: "https://www.albayrouty.com/web/image/product.template/29/image_1024" },
   { id: 95125, name: "مكسيم فاصولياء بيضاء 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.820, priceWholesale: 0, costPrice: 0.800, image: "" },
   { id: 95126, name: "تونا صن بل بالزيت 95غ", unit: "95 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.615, priceWholesale: 0, costPrice: 0.600, image: "" },
   { id: 95127, name: "لاكسا فطر شرائح مقطع 400غ", unit: "400 غ", category: "canned_goods", sub: "mushrooms", priceRetail: 0.615, priceWholesale: 0, costPrice: 0.600, image: "" },
@@ -2739,8 +2743,7 @@ const PRODUCTS_DATA = [
   { id: 95131, name: "الدرة تونا حار 160غ", unit: "160 غ", category: "canned_goods", sub: "tuna", priceRetail: 0.718, priceWholesale: 0, costPrice: 0.700, image: "https://bf1af2.akinoncloudcdn.com/products/2025/03/04/349000/0c36e40a-911e-4c9c-993c-293e91bc2bc4_size1920_cropCenter.jpg" },
   { id: 95132, name: "فطر حدائق الامارات 2.5كغ", unit: "2.5 كغ", category: "canned_goods", sub: "mushrooms", priceRetail: 3.075, priceWholesale: 0, costPrice: 3.000, image: "" },
   { id: 95133, name: "الكسيح حمص حب 390غ", unit: "390 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 1.538, priceWholesale: 0, costPrice: 1.500, image: "" },
-  { id: 95134, name: "فول بيروتي بالكمون 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "" },
-  { id: 96000, name: "ارز مستر وايت بسمتي 3.5 كغم", unit: "3.5 كغم", category: "basmati_rice", priceRetail: 3.065, priceWholesale: 0, costPrice: 2.990, image: "" },
+  { id: 95134, name: "فول بيروتي بالكمون 400غ", unit: "400 غ", category: "canned_goods", sub: "legumes_hummus", priceRetail: 0.341, priceWholesale: 0, costPrice: 0.333, image: "https://www.albayrouty.com/web/image/product.template/19/image_1024" },
   { id: 96001, name: "صنوايت ارز متوسط الحبة اصفر 1 كغم", unit: "1 كغم", category: "medium_rice", priceRetail: 1.025, priceWholesale: 0, costPrice: 1.000, image: "" },
   { id: 96002, name: "ارز شعبان 7 كغم", unit: "7 كغم", category: "medium_rice", priceRetail: 5.627, priceWholesale: 0, costPrice: 5.490, image: "" },
   { id: 96003, name: "سكر شعبان 900 غم", unit: "900 غم", category: "sugar", priceRetail: 0.615, priceWholesale: 0, costPrice: 0.600, image: "https://cdn.moshtare.com/images/originals/10-30-2023_0314am62c74a60ad74c35a8edc.jpg" },
@@ -2994,7 +2997,12 @@ function stopPromoSlider() {
 }
 
 // NAVIGATION APP STATES
+// بيتتبع آخر "مكان" انعرض بالتطبيق، عشان لما ينتقل المستخدم لقسم/شركة/وضع جديد نرجعه أوتوماتيكياً لأول الصفحة
+let __lastNavKey = null;
 function renderApp(){
+  const __navKey = appMode + '|' + wholesaleUnlocked + '|' + viewLevel + '|' + activeCat + '|' + activeSub + '|' + activeOfferId;
+  const __navChanged = __lastNavKey !== null && __navKey !== __lastNavKey;
+  __lastNavKey = __navKey;
   document.getElementById('screenModeSelect').style.display = (appMode === 'select') ? 'flex' : 'none';
   document.getElementById('screenStore').style.display = (appMode === 'store') ? 'flex' : 'none';
   if(appMode === 'select') startEmblemOrbit();
@@ -3130,6 +3138,7 @@ function renderApp(){
   }
   
   updateCartPreview();
+  if (__navChanged) resetScrollTop();
 }
 
 function handleBackButton(){
@@ -3491,6 +3500,7 @@ function closeQuickEditModal(){
 }
 async function saveQuickEdit(){
   if (!_quickEditProductId) return;
+  const editId = _quickEditProductId;
   const unit = document.getElementById('qe_unit').value.trim();
   const priceRetail = parseFloat(document.getElementById('qe_retail').value) || 0;
   const priceWholesale = parseFloat(document.getElementById('qe_wholesale').value) || 0;
@@ -3498,24 +3508,44 @@ async function saveQuickEdit(){
   const company = document.getElementById('qe_company').value;
   const sub = document.getElementById('qe_sub').value;
   const subsub = document.getElementById('qe_subsub').value;
+
+  // نطبّق التعديل فوراً على النسخة المحلية (PRODUCTS_DATA) عشان يشتغل حتى إذا كانت مزامنة Firestore متوقفة مؤقتاً
+  const localProduct = PRODUCTS_DATA.find(p => String(p.id) === String(editId));
+  if (localProduct) {
+    localProduct.unit = unit;
+    localProduct.priceRetail = priceRetail;
+    localProduct.priceWholesale = priceWholesale;
+    if (image) localProduct.image = image;
+    if (company) localProduct.company = company; else delete localProduct.company;
+    if (sub) localProduct.sub = sub; else delete localProduct.sub;
+    if (subsub) localProduct.subsub = subsub; else delete localProduct.subsub;
+  }
+  closeQuickEditModal();
+  renderApp();
+
   try {
     const docData = { unit, priceRetail, priceWholesale, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
     if (image) docData.image = image;
     if (company) docData.company = company; else docData.company = firebase.firestore.FieldValue.delete();
     docData.sub = sub || firebase.firestore.FieldValue.delete();
     docData.subsub = subsub || firebase.firestore.FieldValue.delete();
-    await db.collection('retailProducts').doc(String(_quickEditProductId)).set(docData, { merge: true });
-    closeQuickEditModal();
+    await db.collection('retailProducts').doc(String(editId)).set(docData, { merge: true });
   } catch(e){
-    alert('صار خطأ بالحفظ: ' + e.message);
+    // المزامنة مع Firestore متوقفة مؤقتاً — التعديل انطبق محلياً فقط وما رح يضيع، بس ما رح يتزامن مع باقي الأجهزة لحد ما تنفعّل المزامنة من جديد
+    console.warn('تعذّر حفظ التعديل بـ Firestore (المزامنة متوقفة مؤقتاً):', e.message);
   }
 }
 async function deleteQuickEdit(){
   if (!_quickEditProductId) return;
   if (!confirm('متأكدة بدك تحذفي هاد الصنف نهائياً؟')) return;
+  const delId = _quickEditProductId;
+  // حذف محلي فوري
+  const idx = PRODUCTS_DATA.findIndex(p => String(p.id) === String(delId));
+  if (idx !== -1) PRODUCTS_DATA.splice(idx, 1);
+  closeQuickEditModal();
+  renderApp();
   try {
-    await db.collection('retailProducts').doc(String(_quickEditProductId)).delete();
-    closeQuickEditModal();
+    await db.collection('retailProducts').doc(String(delId)).delete();
   } catch(e){
     alert('صار خطأ بالحذف: ' + e.message);
   }
@@ -6253,6 +6283,12 @@ function renderCategoriesView(){
   }).join('');
 }
 
+// بترجع أعلى الصفحة فوراً عند فتح أي قسم/صفحة جديدة، عشان المستخدم يشوف أول الأصناف مش نص القائمة
+function resetScrollTop(){
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0; // دعم إضافي لسفاري على الآيفون
+}
 function navigateToCategory(key){
   // قفل كل شركات الجملة ما عدا "مستودع الأصيل ( ١ )" مؤقتاً تحت المعالجة
   if (key.startsWith('brand::')) {
@@ -6264,7 +6300,7 @@ function navigateToCategory(key){
   }
   activeCat = key; viewLevel = 'items'; searchQuery = ''; activeSub = 'all';
   document.getElementById('searchInput').value = '';
-  pushNavState(); renderApp();
+  pushNavState(); renderApp(); resetScrollTop();
 }
 
 const NTDCO_BRAND_NAME = "الشركة الوطنية للتجارة والتوزيع (NTDCO)";
@@ -6971,14 +7007,18 @@ function setBakingSub(key){
   renderItemsView();
 }
 
+let __searchDebounceTimer = null;
 function handleSearch(val){
-  searchQuery = val.trim();
-  if(searchQuery){
-    viewLevel = 'items';
-  } else if(!activeCat){
-    viewLevel = 'categories';
-  }
-  renderApp();
+  clearTimeout(__searchDebounceTimer);
+  __searchDebounceTimer = setTimeout(() => {
+    searchQuery = val.trim();
+    if(searchQuery){
+      viewLevel = 'items';
+    } else if(!activeCat){
+      viewLevel = 'categories';
+    }
+    renderApp();
+  }, 180); // مهلة بسيطة عشان ما يصير رسم كامل للصفحة مع كل حرف وقت الكتابة السريعة
 }
 
 // ===== تحديث دقيق فوري: يمسح الكاش المحلي ويجيب كل الأصناف طازة من قاعدة البيانات مباشرة =====
