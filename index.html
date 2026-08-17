@@ -1467,9 +1467,8 @@ async function initFirestoreSync(){
     console.error('تعذّر الاتصال بـ Firebase:', err);
   }
 }
-// 🚧 مؤقتاً معطّل أثناء إعادة بناء الأصناف يدوياً من الكود (تفادياً لأي تداخل/فلاش من بيانات قديمة بالـ Firestore أو الكاش).
-// لما نخلص كل الأقسام، نرجّع نفعّل هالسطر (نشيل التعليق) عشان نرحّل كل بيانات الملف لقاعدة البيانات الحية دفعة وحدة.
-// initFirestoreSync();
+// ✅ تم تفعيل المزامنة من جديد (القاعدة الحية اتفرغت من البيانات القديمة، والملف هلأ هو المصدر الصحيح لكل الأصناف).
+initFirestoreSync();
 wireImageFileInput('qe_image_file', 'qe_image', 'qe_image_preview');
 if ('serviceWorker' in navigator){
   window.addEventListener('load', () => {
