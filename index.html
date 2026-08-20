@@ -274,8 +274,8 @@
   .ad-banner-dot.active{ background:var(--gold); width:16px; border-radius:5px; }
 
   /* لوحة إعلانات ذكية خاصة بقسم المفرق/المستهلك بس — بتحل محل شريط الترحيب وشريط الـ GPS */
-  .retail-ad-banner-slot{ padding:14px 14px 16px; }
-  .retail-ad-viewport{ position:relative; width:100%; aspect-ratio:16/9; border-radius:18px; overflow:hidden; box-shadow:0 8px 22px rgba(16,25,58,0.18); background:linear-gradient(135deg,#9C7A24,#3A2F1B); }
+  .retail-ad-banner-slot{ padding:10px 8px 16px; }
+  .retail-ad-viewport{ position:relative; width:100%; aspect-ratio:3/2; border-radius:18px; overflow:hidden; box-shadow:0 8px 22px rgba(16,25,58,0.18); background:linear-gradient(135deg,#9C7A24,#3A2F1B); }
   .retail-ad-slide{ position:absolute; inset:0; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .6s ease; cursor:pointer; text-decoration:none; }
   .retail-ad-slide.active{ opacity:1; pointer-events:auto; }
   .retail-ad-slide img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
@@ -745,7 +745,7 @@
       </div>
     </div>
 
-    <div class="promo-slider-container" id="promoSliderSection">
+    <div class="promo-slider-container" id="promoSliderSection" style="display:none;">
       <div class="promo-slides" id="promoSlides">
         <div class="promo-slide slide-1">
           <div class="promo-text-side">
@@ -3377,13 +3377,9 @@ function renderApp(){
     backBtn.style.visibility = 'visible';
     
     const promoSection = document.getElementById('promoSliderSection');
-    if (!wholesaleUnlocked && viewLevel === 'categories') {
-      promoSection.style.display = 'block';
-      startPromoSlider();
-    } else {
-      promoSection.style.display = 'none';
-      stopPromoSlider();
-    }
+    // شريط "مشترياتك لباب بيتك" ملغي نهائياً بناءً على طلب العميل
+    promoSection.style.display = 'none';
+    stopPromoSlider();
 
     // داخل أي صفحة تابعة لشركة (سواء صفحة الشركة الرئيسية أو قسم فرعي جواها متل Ponky): نخفي شريط المؤسسة وشريط الـ GPS
     const HAPPINESS_BRAND_NAME = "شركة صناع السعادة لتجارة السكاكر والمواد الغذائية";
