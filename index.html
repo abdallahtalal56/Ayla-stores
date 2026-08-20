@@ -67,7 +67,8 @@
   .icon-btn:active{ transform: scale(0.9); background:rgba(255,255,255,0.2); }
 
   /* SCREENS CONTAINER - FIXED PADDING FOR IOS */
-  .screen{ display:none; flex-direction:column; flex:1; padding-top: calc(76px + env(safe-area-inset-top, 0px)); }
+  .screen{ display:none; flex-direction:column; flex:1; padding-top: calc(76px + env(safe-area-inset-top, 0px)); transition: opacity .18s ease; }
+  .screen.nav-fade{ opacity: 0; }
   .screen.active{ display:flex; }
 
   /* MODE SELECT SCREEN */
@@ -325,10 +326,12 @@
   .price-num{ font-family:'Cairo',sans-serif; font-weight:900; font-size:13px; line-height:1.1; white-space:nowrap;}
   .price-cur{ font-size:8px; font-weight:600; opacity:0.9; margin-right:2px;}
   .add-btn{
-    width:30px; height:30px; border-radius:50%; border:none; background:var(--green); color:#fff; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 3px 7px rgba(31,122,77,0.3); transition: 0.2s;
+    width:30px; height:30px; border-radius:50%; border:none; background:var(--green); color:#fff; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 3px 7px rgba(31,122,77,0.3); transition: transform .12s ease, box-shadow .12s ease;
   }
+  .add-btn:active{ transform:scale(0.88); box-shadow:0 1px 3px rgba(31,122,77,0.3); }
   .qty-control{ display:none; align-items:center; gap:6px; background:var(--green); border-radius:15px; padding:3px 5px;}
-  .qty-control button{ width:22px; height:22px; border:none; background:rgba(255,255,255,0.2); color:#fff; border-radius:50%; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .qty-control button{ width:22px; height:22px; border:none; background:rgba(255,255,255,0.2); color:#fff; border-radius:50%; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: transform .12s ease; }
+  .qty-control button:active{ transform:scale(0.85); }
   .qty-control span{ color:#fff; font-weight:700; font-size:12px; min-width:14px; text-align:center;}
 
   /* بطاقة عروض قسم المفرق/المستهلك فقط — صورة كاملة الحجم، صندوق تفاصيل، وسعر تحته */
@@ -3134,6 +3137,47 @@ const PRODUCTS_DATA = [
   { id: 96386, name: "صلصة حلو وحامض بانتي 200 مل", unit: "200 مل", category: "tomato_paste", priceRetail: 1.999, priceWholesale: 0, costPrice: 1.950, image: "" },
   { id: 96387, name: "صوص سلطة السيزر يوجرت كوهني 250 مل", unit: "250 مل", category: "tomato_paste", priceRetail: 1.794, priceWholesale: 0, costPrice: 1.750, image: "" },
   { id: 96388, name: "حليب حمودة سادة 125 مل", unit: "125 مل", category: "dairy_cheese", priceRetail: 0.205, priceWholesale: 0, costPrice: 0.200, image: "" },
+  { id: 96389, name: "شعرية باكستانية مهران 150غم", unit: "150 غم", category: "pasta", priceRetail: 0.304, priceWholesale: 0, costPrice: 0.297, image: "" },
+  { id: 96390, name: "شعرية الكويتية 500غم رقم 3", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96391, name: "بانزاني معكرونة فراشة ملون 500غم", unit: "500 غم", category: "pasta", priceRetail: 1.179, priceWholesale: 0, costPrice: 1.150, image: "" },
+  { id: 96392, name: "معكرونة باستا زارا رقم (61) 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96393, name: "معكرونة باستا زارا فيتوتشيني رقم (205) 500غم", unit: "500 غم", category: "pasta", priceRetail: 1.794, priceWholesale: 0, costPrice: 1.750, image: "" },
+  { id: 96394, name: "معكرونة تشيكو لينجويني 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96395, name: "كيلوبنز نودلز بطعم الدجاج 70غم", unit: "70 غم", category: "instant_noodles", priceRetail: 0.154, priceWholesale: 0, costPrice: 0.150, image: "" },
+  { id: 96396, name: "معكرونة ايطالية العلالي 450 غم رقم 1", unit: "450 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96397, name: "معكرونة تشيكو ريجاتوني رقم 24", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96398, name: "معكرونة اكسترا باستا زارا فراشة رقم (31) 500 غم", unit: "500 غم", category: "pasta", priceRetail: 1.435, priceWholesale: 0, costPrice: 1.400, image: "" },
+  { id: 96399, name: "معكرونة باستا زارا رقم (26) 500 غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96400, name: "معكرونة الدرة سباغيتي 300 غم", unit: "300 غم", category: "pasta", priceRetail: 0.256, priceWholesale: 0, costPrice: 0.250, image: "" },
+  { id: 96401, name: "ميب نودلز بالدجاج الحار 110 غم", unit: "110 غم", category: "instant_noodles", priceRetail: 1.527, priceWholesale: 0, costPrice: 1.490, image: "" },
+  { id: 96402, name: "معكرونة تشيكو كباليني رقم (1) 500 غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96403, name: "معكرونة برغي الكويتية رقم (20) 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96404, name: "معكرونة باستا زارا رقم (64) 500 غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96405, name: "معكرونة المعلم كوع صغير 180غم", unit: "180 غم", category: "pasta", priceRetail: 0.128, priceWholesale: 0, costPrice: 0.125, image: "" },
+  { id: 96406, name: "معكرونة العلالي سباغيتي 400غم", unit: "400 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96407, name: "بانزاني سباغيتي 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.871, priceWholesale: 0, costPrice: 0.850, image: "" },
+  { id: 96408, name: "معكرونة الكويتية رقم 28 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96409, name: "ميب نودلز باللاسماك 120 غم", unit: "120 غم", category: "instant_noodles", priceRetail: 1.281, priceWholesale: 0, costPrice: 1.250, image: "" },
+  { id: 96410, name: "معكرونة بانزاني كوع 500 غم", unit: "500 غم", category: "pasta", priceRetail: 0.871, priceWholesale: 0, costPrice: 0.850, image: "" },
+  { id: 96411, name: "كيلوبنز نودلز نكهة دجاج كاري 75غم", unit: "75 غم", category: "instant_noodles", priceRetail: 0.154, priceWholesale: 0, costPrice: 0.150, image: "" },
+  { id: 96412, name: "معكرونة دبي سباغيتي تويست برغي 400غم", unit: "400 غم", category: "pasta", priceRetail: 0.564, priceWholesale: 0, costPrice: 0.550, image: "" },
+  { id: 96413, name: "شعيرية المعلم 180غم", unit: "180 غم", category: "pasta", priceRetail: 0.128, priceWholesale: 0, costPrice: 0.125, image: "" },
+  { id: 96414, name: "معكرونة تشيكو سباغيتي رقم 2 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96415, name: "بنزاني معكرونة تالياتلي 500غم", unit: "500 غم", category: "pasta", priceRetail: 1.537, priceWholesale: 0, costPrice: 1.500, image: "" },
+  { id: 96416, name: "معكرونة دبي صدفة 400غم", unit: "400 غم", category: "pasta", priceRetail: 0.564, priceWholesale: 0, costPrice: 0.550, image: "" },
+  { id: 96417, name: "معكرونة الكويتية رقم 41 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96418, name: "معكرونة تشيكو سباغيتي رقم 3 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96419, name: "بانزاني معكرونة فراشة 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.871, priceWholesale: 0, costPrice: 0.850, image: "" },
+  { id: 96420, name: "معكرونة كويتية 500غم رقم 40", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96421, name: "معكرونة الكويتية رقم 36 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96422, name: "معكرونة ريجاتوني الغزال 300غم", unit: "300 غم", category: "pasta", priceRetail: 0.359, priceWholesale: 0, costPrice: 0.350, image: "" },
+  { id: 96423, name: "معكرونة باستا زارا برغي رقم (57) 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96424, name: "معكرونة باستا زارا بالقمح رقم (57) 500غم", unit: "500 غم", category: "pasta", priceRetail: 1.281, priceWholesale: 0, costPrice: 1.250, image: "" },
+  { id: 96425, name: "معكرونة تشيكو كوع صغير رقم (38) 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96426, name: "معكرونة الوردة البيضاء لسان العصفور 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.769, priceWholesale: 0, costPrice: 0.750, image: "" },
+  { id: 96427, name: "معكرونة دبي ملفوفة 300غم", unit: "300 غم", category: "pasta", priceRetail: 0.717, priceWholesale: 0, costPrice: 0.700, image: "" },
+  { id: 96428, name: "معكرونة الكويتية رقم 38 500غم", unit: "500 غم", category: "pasta", priceRetail: 0.974, priceWholesale: 0, costPrice: 0.950, image: "" },
+  { id: 96429, name: "مكرونة رامن بنكهة الدجاج الحار", unit: "قطعة", category: "instant_noodles", priceRetail: 1.281, priceWholesale: 0, costPrice: 1.250, image: "" },
 ];
 
 // ربط الصنفين الجدد بقسم "مستودع الأصيل ( ١ )"
@@ -6608,6 +6652,12 @@ function resetScrollTop(){
   window.scrollTo(0, 0);
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0; // دعم إضافي لسفاري على الآيفون
+  // انتقال بصري سلس بدل القفزة المفاجئة بين الأقسام والصفحات
+  const activeScreen = document.getElementById(appMode === 'store' ? 'screenStore' : 'screenModeSelect');
+  if (activeScreen){
+    activeScreen.classList.add('nav-fade');
+    requestAnimationFrame(() => requestAnimationFrame(() => activeScreen.classList.remove('nav-fade')));
+  }
 }
 function navigateToCategory(key){
   // قفل كل شركات الجملة ما عدا "مستودع الأصيل ( ١ )" مؤقتاً تحت المعالجة
@@ -8034,7 +8084,8 @@ if (_existingVisitorPhone){
 }
 document.getElementById('phoneGateOverlay').style.display = 'none';
 startApp();
-hideAppLoadingSplash();
+// شاشة اللوغو (appLoadingSplash) بتضل ظاهرة شوي عشان تعطي إحساس تحميل سلس بدل القفزة المفاجئة للقوائم
+setTimeout(hideAppLoadingSplash, 900);
 
 // =====================================================================
 // مزامنة تلقائية مع Google Sheets: أسعار + أصناف جديدة + شركات جديدة
