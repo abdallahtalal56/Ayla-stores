@@ -1,0 +1,45 @@
+{
+  "name": "ايلا ستورز",
+  "short_name": "ايلا ستورز",
+  "description": "متجر ايلا للمواد الغذائية والمستهلكات",
+  "id": "./",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#F8F4EA",
+  "theme_color": "#3A2F1B",
+  "categories": ["shopping", "business"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "البحث عن منتج",
+      "short_name": "بحث",
+      "url": "./index.html?shortcut=search",
+      "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "سلة الطلب",
+      "short_name": "السلة",
+      "url": "./index.html?shortcut=cart",
+      "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
