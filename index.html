@@ -1189,8 +1189,7 @@ async function handleSetCompanyCode(){
   }
 }
 
-// مسار ImgBB القديم متوقف في النسخة العامة؛ لا تُرفع الصور إلا عبر مسار آمن معتمد من Ayla.
-const IMGBB_API_KEY = ''; // تعطيل الرفع المباشر من HTML؛ الصور تُدار من خادم Ayla.
+// رفع صور/GIF لوحة الإعلانات: يستخدم Cloudinary (نفس حساب رفع الفيديو أدناه) — منتجات المتجر نفسها تبقى بالكامل من Ayla V2 ولا علاقة لها بهذا الرفع.
 // رفع فيديو عبر Cloudinary (لدعم لوحة الإعلانات الذكية بالفيديو)
 const CLOUDINARY_CLOUD_NAME = "qbxunlvy";
 const CLOUDINARY_UPLOAD_PRESET = "ml_default";
@@ -1223,16 +1222,18 @@ function resizeImageForUpload(file, maxDim = 1280, quality = 0.82){
   });
 }
 
+// رفع صورة/GIF عبر نفس حساب Cloudinary المستخدم أصلاً لرفع الفيديو باللوحة الإعلانية (بدون الحاجة لمفتاح خارجي جديد)
 async function uploadImageOnce(fileOrBlob){
   const formData = new FormData();
-  formData.append('image', fileOrBlob, 'photo.jpg');
-  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+  formData.append('file', fileOrBlob, 'photo.jpg');
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
     method: 'POST',
     body: formData
   });
   const data = await res.json();
-  if (!data.success) throw new Error(data.error?.message || 'فشل الرفع لـ ImgBB');
-  return data.data.url;
+  if (!res.ok || data.error) throw new Error(data.error?.message || 'فشل رفع الصورة لـ Cloudinary');
+  return data.secure_url;
 }
 
 async function uploadImageFile(file){
@@ -3136,7 +3137,7 @@ function renderApp(){
   if(greetingEl){
     const savedVisitorName = localStorage.getItem('alaseel_visitor_name') || localStorage.getItem('alaseel_name');
     if(savedVisitorName){
-      const isReturning = localStorage.getItem('alaseel_visitor_phone') && localStorage.getItem('alaseel_visit_count') > 1;
+      const isReturning = !!localStorage.getItem('alaseel_phone');
       greetingEl.textContent = isReturning ? `نورت من جديد يا ${savedVisitorName} ✨` : `أهلاً ${savedVisitorName} 👋`;
       greetingEl.style.display = 'block';
     } else {
@@ -3331,12 +3332,12 @@ function openMyOrders(){
 }
 
 async function loadMyOrders(){
-  const phone = localStorage.getItem('alaseel_visitor_phone');
+  const phone = localStorage.getItem('alaseel_phone');
   const label = document.getElementById('myOrdersPhoneLabel');
   const list = document.getElementById('myOrdersList');
   if(!phone){
     label.textContent = '';
-    list.innerHTML = '<div style="text-align:center;color:var(--gray);padding:20px 8px;">لازم يكون فيه رقم جوال مسجّل من شاشة الدخول أولاً.</div>';
+    list.innerHTML = '<div style="text-align:center;color:var(--gray);padding:20px 8px;">📦 بعد أول طلبية إلك، رح تلاقي طلباتك هون تلقائياً.</div>';
     return;
   }
   label.textContent = `عرض الطلبات المسجّلة برقم: ${phone}`;
