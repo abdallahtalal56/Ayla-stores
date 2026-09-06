@@ -2592,7 +2592,7 @@ const AYLA_V2_SLUG_CATEGORY_ALIASES = {
   'moontak-140-220': 'disposables', 'moontak-140-221': 'disposables', 'moontak-140-222': 'disposables', 'moontak-140-223': 'disposables', 'moontak-140-224': 'disposables', 'moontak-140-225': 'disposables',
   'moontak-141-168': 'dairy_cheese', 'moontak-141-169': 'dairy_cheese', 'moontak-141-170': 'dairy_cheese',
   'moontak-142-226': 'tomato_paste', 'moontak-142-227': 'sauces_condiments', 'moontak-142-228': 'sauces_condiments', 'moontak-142-229': 'sauces_condiments',
-  'moontak-143-230': 'tahini_jam', 'moontak-143-231': 'tahini_jam', 'moontak-144-232': 'fresh_eggs',
+  'moontak-139-0': 'legumes_spices', 'moontak-143-230': 'tahini_jam', 'moontak-143-231': 'tahini_jam', 'moontak-144-232': 'fresh_eggs',
   'moontak-145-233': 'legumes_spices', 'moontak-145-234': 'legumes_spices', 'moontak-145-235': 'legumes_spices', 'moontak-145-236': 'legumes_spices',
   'moontak-146-237': 'frozen_chilled', 'moontak-146-238': 'frozen_chilled', 'moontak-146-239': 'frozen_chilled', 'moontak-146-240': 'frozen_chilled', 'moontak-146-241': 'frozen_chilled', 'moontak-146-242': 'frozen_chilled',
   'moontak-147-171': 'sweets_snacks', 'moontak-147-172': 'sweets_snacks', 'moontak-147-173': 'sweets_snacks', 'moontak-147-174': 'sweets_snacks', 'moontak-147-175': 'sweets_snacks', 'moontak-147-176': 'sweets_snacks', 'moontak-147-177': 'sweets_snacks',
@@ -2748,10 +2748,27 @@ function classifyAylaV2Sub(category, title){
   for (const rule of rules) { if (rule.words.some(w => text.includes(w))) return rule.sub; }
   return AYLA_V2_SUB_FALLBACK_OTHER.has(category) ? 'other' : '';
 }
+// مصدر Moontak 139-0 يجمع البقوليات والبهارات والمحمص في قائمة واحدة.
+// نعيد تصنيف المنتجات محليًا داخل الأقسام الثابتة دون تكرار أو إنشاء كتالوج جديد.
+const AYLA_V2_MIXED_139_SPICE_WORDS = [
+  'بهار', 'بابريكا', 'فلفل', 'كمون', 'قرفة', 'زنجبيل', 'كركم', 'كاري', 'يانسون', 'هيل', 'قرنفل', 'سماق', 'زعتر', 'زعفران', 'ريحان', 'شومر', 'جعدة', 'حلبة', 'حبة البركة', 'قزحة', 'روز ماري', 'اكليل الجبل', 'بابونج', 'ميرمية', 'نعنع', 'بصل ناعم', 'ثوم ناعم', 'ملح'
+];
+const AYLA_V2_MIXED_139_ROASTERY_WORDS = [
+  'بزر', 'بذور', 'حمص', 'فول', 'عدس', 'فاصوليا', 'لوبيا', 'برغل', 'ترمس', 'سمسم', 'مكسرات', 'لوز', 'جوز', 'كاجو', 'فستق', 'زبيب', 'تين مجفف', 'تمر', 'ذرة', 'فريكة', 'لب', 'لب دوار'
+];
+function classifyAylaV2Category(item, baseCategory){
+  if (String(item?.categorySlug || '') !== 'moontak-139-0') return baseCategory;
+  const title = String(item?.title || '').trim();
+  if (AYLA_V2_MIXED_139_SPICE_WORDS.some(word => title.includes(word))) return 'legumes_spices';
+  if (AYLA_V2_MIXED_139_ROASTERY_WORDS.some(word => title.includes(word))) return 'legumes_roastery';
+  // المنتجات التي لا تحمل كلمة واضحة تبقى ظاهرة في القسم الرئيسي بدل إسقاطها.
+  return 'legumes_spices';
+}
 function buildAylaV2Products(rows){
   const accepted = [], seen = new Set();
   rows.forEach((item, index) => {
-    const category = normalizeAylaCategory(item.categoryName, item.categorySlug);
+    const normalizedCategory = normalizeAylaCategory(item.categoryName, item.categorySlug);
+    const category = classifyAylaV2Category(item, normalizedCategory);
     const sourceId = String(item.id ?? '');
     if (!category || !sourceId || seen.has(sourceId)) return;
     const price = Number(item.priceRetail);
@@ -2780,6 +2797,20 @@ function hydrateAylaV2FromCache(){
   return true;
 }
 
+// حماية من نتائج المصدر الجزئية: لا نحذف منتجًا محفوظًا إذا أعاد المصدر دفعة ناقصة مؤقتًا.
+// المنتجات الموجودة تُحدّث من المصدر، والمنتجات الجديدة تُضاف، أما المنتج الغائب مؤقتًا فيبقى محفوظًا.
+function mergeAylaV2Products(incoming, previousProducts){
+  if (!Array.isArray(previousProducts) || !previousProducts.length) return incoming;
+  const incomingBySource = new Map(incoming.map(product => [String(product.sourceId), product]));
+  const merged = previousProducts.map(previous => {
+    const fresh = incomingBySource.get(String(previous.sourceId));
+    if (!fresh) return previous;
+    if (!fresh.image && previous.image) fresh.image = previous.image;
+    incomingBySource.delete(String(previous.sourceId));
+    return fresh;
+  });
+  return [...merged, ...incomingBySource.values()];
+}
 async function loadAylaV2Catalog(options = {}){
   const background = !!options.background;
   aylaV2CatalogState = { ...aylaV2CatalogState, status: background ? 'refreshing' : 'loading', error: '' };
@@ -2791,19 +2822,20 @@ async function loadAylaV2Catalog(options = {}){
     if (!response.ok) throw new Error(`فشل كتالوج Ayla V2 (${response.status})`);
     const payload = await response.json();
     const rows = Array.isArray(payload.products) ? payload.products : [];
-    const accepted = buildAylaV2Products(rows);
-    const catalogVersion = String(payload.catalogVersion || payload.generatedAt || `${rows.length}:${accepted.length}`);
+    const incoming = buildAylaV2Products(rows);
     const previous = loadProductsCache();
+    const accepted = mergeAylaV2Products(incoming, previous?.products || []);
+    const catalogVersion = String(payload.catalogVersion || payload.generatedAt || `${rows.length}:${accepted.length}`);
     const fingerprint = accepted.map(item => [item.sourceId, item.title || item.name, item.priceRetail, item.image || '', item.category].join('~')).join('|');
     const changed = !previous || previous.catalogVersion !== catalogVersion || previous.fingerprint !== fingerprint || previous.products.length !== accepted.length;
     notifyImageCache(imageUrlsFromProducts(accepted));
     if (changed){
       PRODUCTS_DATA.splice(0, PRODUCTS_DATA.length, ...accepted);
-      saveProductsCache({ catalogVersion, fingerprint, generatedAt: payload.generatedAt || null, total: rows.length, savedAt: Date.now(), products: accepted });
+      saveProductsCache({ catalogVersion, fingerprint, generatedAt: payload.generatedAt || null, total: Math.max(rows.length, accepted.length), savedAt: Date.now(), products: accepted });
       prefetchNewProductImages(accepted, previous?.products || []);
     }
     requestPersistentStorage();
-    aylaV2CatalogState = { status: 'success', total: rows.length, accepted: accepted.length, rejected: rows.length - accepted.length, lastSync: Date.now(), error: '', catalogVersion };
+    aylaV2CatalogState = { status: 'success', total: Math.max(rows.length, accepted.length), accepted: accepted.length, rejected: Math.max(0, rows.length - incoming.length), lastSync: Date.now(), error: '', catalogVersion };
     if (changed && typeof renderApp === 'function') renderApp();
     if (typeof renderAylaSyncAgent === 'function' && document.getElementById('syncAgentBox')?.style.display === 'block') renderAylaSyncAgent();
     return accepted;
