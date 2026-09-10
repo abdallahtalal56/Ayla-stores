@@ -1189,7 +1189,8 @@ async function handleSetCompanyCode(){
   }
 }
 
-// رفع صور/GIF لوحة الإعلانات: يستخدم Cloudinary (نفس حساب رفع الفيديو أدناه) — منتجات المتجر نفسها تبقى بالكامل من Ayla V2 ولا علاقة لها بهذا الرفع.
+// مسار ImgBB القديم متوقف في النسخة العامة؛ لا تُرفع الصور إلا عبر مسار آمن معتمد من Ayla.
+const IMGBB_API_KEY = ''; // تعطيل الرفع المباشر من HTML؛ الصور تُدار من خادم Ayla.
 // رفع فيديو عبر Cloudinary (لدعم لوحة الإعلانات الذكية بالفيديو)
 const CLOUDINARY_CLOUD_NAME = "qbxunlvy";
 const CLOUDINARY_UPLOAD_PRESET = "ml_default";
@@ -1222,18 +1223,16 @@ function resizeImageForUpload(file, maxDim = 1280, quality = 0.82){
   });
 }
 
-// رفع صورة/GIF عبر نفس حساب Cloudinary المستخدم أصلاً لرفع الفيديو باللوحة الإعلانية (بدون الحاجة لمفتاح خارجي جديد)
 async function uploadImageOnce(fileOrBlob){
   const formData = new FormData();
-  formData.append('file', fileOrBlob, 'photo.jpg');
-  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+  formData.append('image', fileOrBlob, 'photo.jpg');
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
     method: 'POST',
     body: formData
   });
   const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data.error?.message || 'فشل رفع الصورة لـ Cloudinary');
-  return data.secure_url;
+  if (!data.success) throw new Error(data.error?.message || 'فشل الرفع لـ ImgBB');
+  return data.data.url;
 }
 
 async function uploadImageFile(file){
@@ -1509,45 +1508,58 @@ function setOfflineUi(isOffline){
 window.addEventListener('offline', () => setOfflineUi(true));
 window.addEventListener('online', () => { setOfflineUi(false); loadAylaV2Catalog({ background: true, forceNetwork: true }).catch(() => {}); });
 
-// ===== إشعارات Ayla Push: اشتراك حقيقي قابل للتشغيل والإيقاف =====
+// ===== إشعارات Ayla Push: اشتراك حقيقي قابل للتشغيل والإيقاف وإعادة التسجيل التلقائي =====
 const AYLA_PUSH_API = 'https://aylastore-xrwrnz39.manus.space/api/push';
-const AYLA_PUSH_STATE_KEY = 'ayla_push_enabled_v1';
+const AYLA_PUSH_STATE_KEY = 'ayla_push_enabled_v2';
+const AYLA_PUSH_LEGACY_STATE_KEY = 'ayla_push_enabled_v1';
+const AYLA_PUSH_PUBLIC_KEY_STATE = 'ayla_push_vapid_public_key_v1';
 function pushKeyToBytes(key){ const padding = '='.repeat((4 - key.length % 4) % 4); const raw = atob((key + padding).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...raw].map(ch => ch.charCodeAt(0))); }
 function pushSupported(){ return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+function pushLocallyEnabled(){ return localStorage.getItem(AYLA_PUSH_STATE_KEY) === '1' || localStorage.getItem(AYLA_PUSH_LEGACY_STATE_KEY) === '1'; }
 async function getPushConfig(){ const response = await fetch(`${AYLA_PUSH_API}/config`, { cache: 'no-store' }); if (!response.ok) throw new Error('تعذر الاتصال بخدمة الإشعارات'); return response.json(); }
-async function enableAylaPush(){
-  if (!pushSupported()) throw new Error('الإشعارات غير مدعومة في هذا المتصفح');
-  const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-  if (permission !== 'granted') throw new Error('لم يتم السماح بالإشعارات');
-  const config = await getPushConfig(); if (!config.enabled || !config.publicKey) throw new Error('الإشعارات غير مفعلة حالياً');
-  const registration = await navigator.serviceWorker.ready;
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKeyToBytes(config.publicKey) });
+async function saveAylaPushSubscription(subscription, publicKey){
   const response = await fetch(`${AYLA_PUSH_API}/subscribe`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(subscription.toJSON()) });
   if (!response.ok) throw new Error('تعذر حفظ اشتراك الإشعارات');
-  localStorage.setItem(AYLA_PUSH_STATE_KEY, '1'); updatePushButton(); return true;
+  localStorage.setItem(AYLA_PUSH_STATE_KEY, '1'); localStorage.setItem(AYLA_PUSH_LEGACY_STATE_KEY, '1'); localStorage.setItem(AYLA_PUSH_PUBLIC_KEY_STATE, publicKey);
 }
+async function ensureAylaPushSubscription({ interactive = false } = {}){
+  if (!pushSupported()) { if (interactive) throw new Error('الإشعارات غير مدعومة في هذا المتصفح'); return false; }
+  const permission = Notification.permission === 'granted' ? 'granted' : (interactive ? await Notification.requestPermission() : Notification.permission);
+  if (permission !== 'granted') { if (interactive) throw new Error('لم يتم السماح بالإشعارات'); return false; }
+  const config = await getPushConfig(); if (!config.enabled || !config.publicKey) { if (interactive) throw new Error('الإشعارات غير مفعلة حاليًا'); return false; }
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  const savedKey = localStorage.getItem(AYLA_PUSH_PUBLIC_KEY_STATE);
+  if (subscription && savedKey && savedKey !== config.publicKey) { await subscription.unsubscribe().catch(() => {}); subscription = null; }
+  if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKeyToBytes(config.publicKey) });
+  await saveAylaPushSubscription(subscription, config.publicKey); updatePushButton(); return true;
+}
+async function enableAylaPush(){ return ensureAylaPushSubscription({ interactive: true }); }
+async function syncAylaPushIfEnabled(){ if (!pushLocallyEnabled()) return false; try { return await ensureAylaPushSubscription(); } catch (error) { console.warn('[Ayla Push] auto resubscribe failed', error); return false; } }
 async function disableAylaPush(){
   if (!pushSupported()) return;
   const registration = await navigator.serviceWorker.ready; const subscription = await registration.pushManager.getSubscription();
   if (subscription) await fetch(`${AYLA_PUSH_API}/subscribe`, { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ endpoint: subscription.endpoint }) }).catch(() => {});
   if (subscription) await subscription.unsubscribe().catch(() => {});
-  localStorage.removeItem(AYLA_PUSH_STATE_KEY); updatePushButton();
+  localStorage.removeItem(AYLA_PUSH_STATE_KEY); localStorage.removeItem(AYLA_PUSH_LEGACY_STATE_KEY); localStorage.removeItem(AYLA_PUSH_PUBLIC_KEY_STATE); updatePushButton();
 }
 async function toggleAylaPush(){
   const button = document.getElementById('aylaPushButton'); if (button) { button.disabled = true; button.dataset.busy = '1'; }
-  try { if (localStorage.getItem(AYLA_PUSH_STATE_KEY) === '1') await disableAylaPush(); else await enableAylaPush(); }
-  catch (error) { showPwaAction({ title:'إشعارات ايلا ستورز', text:error?.message || 'تعذر تفعيل الإشعارات', actionLabel:'حسناً', onAction:()=>{ getPwaActionBanner().style.display='none'; } }); }
+  try { if (pushLocallyEnabled()) await disableAylaPush(); else await enableAylaPush(); }
+  catch (error) { showPwaAction({ title:'إشعارات ايلا ستورز', text:error?.message || 'تعذر تفعيل الإشعارات', actionLabel:'حسنًا', onAction:()=>{ getPwaActionBanner().style.display='none'; } }); }
   finally { if (button) { button.disabled = false; button.dataset.busy = ''; } updatePushButton(); }
 }
-function updatePushButton(){ const button = document.getElementById('aylaPushButton'); if (!button) return; const enabled = localStorage.getItem(AYLA_PUSH_STATE_KEY) === '1'; button.style.display = enabled ? 'none' : ''; button.textContent = '🔕 فعّل الإشعارات'; button.setAttribute('aria-pressed', String(enabled)); button.classList.toggle('is-enabled', enabled); }
+function updatePushButton(){ const button = document.getElementById('aylaPushButton'); if (!button) return; const enabled = pushLocallyEnabled(); button.style.display = enabled ? 'none' : ''; button.textContent = '🔕 فعّل الإشعارات'; button.setAttribute('aria-pressed', String(enabled)); button.classList.toggle('is-enabled', enabled); }
 function mountPushButton(){
   if (document.getElementById('aylaPushButton') || !pushSupported()) return;
   const button = document.createElement('button'); button.id='aylaPushButton'; button.type='button'; button.onclick=toggleAylaPush; button.textContent='🔕 فعّل الإشعارات'; button.setAttribute('aria-label','تفعيل إشعارات ايلا ستورز');
   button.style.cssText='position:fixed;z-index:1200;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 76px);border:1px solid #d7bd72;border-radius:999px;padding:9px 12px;background:#fffdf7ee;color:#3d6b2f;font-size:11px;font-weight:900;box-shadow:0 8px 22px #0002;transition:transform .16s ease,opacity .16s ease;';
   document.body.appendChild(button); updatePushButton();
 }
-window.addEventListener('load', () => { setTimeout(mountPushButton, 900); });
+window.addEventListener('load', () => { setTimeout(mountPushButton, 900); setTimeout(syncAylaPushIfEnabled, 1400); });
+window.addEventListener('online', () => { setTimeout(syncAylaPushIfEnabled, 500); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncAylaPushIfEnabled(); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('controllerchange', () => { setTimeout(syncAylaPushIfEnabled, 1200); });
 function applyProductOverride(id, data, removed){
   if (removed){
     const idx = PRODUCTS_DATA.findIndex(p => p.id === id);
@@ -2784,19 +2796,6 @@ function buildAylaV2Products(rows){
   });
   return accepted;
 }
-
-function hydrateAylaV2FromCache(){
-  const cache = loadProductsCache();
-  if (!cache?.products?.length) return false;
-  PRODUCTS_DATA.splice(0, PRODUCTS_DATA.length, ...cache.products);
-  aylaV2CatalogState = {
-    status: navigator.onLine ? 'cached' : 'offline', total: cache.total || cache.products.length,
-    accepted: cache.products.length, rejected: Math.max(0, (cache.total || cache.products.length) - cache.products.length),
-    lastSync: cache.savedAt || null, error: '', catalogVersion: cache.catalogVersion || ''
-  };
-  return true;
-}
-
 // حماية من نتائج المصدر الجزئية: لا نحذف منتجًا محفوظًا إذا أعاد المصدر دفعة ناقصة مؤقتًا.
 // المنتجات الموجودة تُحدّث من المصدر، والمنتجات الجديدة تُضاف، أما المنتج الغائب مؤقتًا فيبقى محفوظًا.
 function mergeAylaV2Products(incoming, previousProducts){
@@ -2811,6 +2810,18 @@ function mergeAylaV2Products(incoming, previousProducts){
   });
   return [...merged, ...incomingBySource.values()];
 }
+function hydrateAylaV2FromCache(){
+  const cache = loadProductsCache();
+  if (!cache?.products?.length) return false;
+  PRODUCTS_DATA.splice(0, PRODUCTS_DATA.length, ...cache.products);
+  aylaV2CatalogState = {
+    status: navigator.onLine ? 'cached' : 'offline', total: cache.total || cache.products.length,
+    accepted: cache.products.length, rejected: Math.max(0, (cache.total || cache.products.length) - cache.products.length),
+    lastSync: cache.savedAt || null, error: '', catalogVersion: cache.catalogVersion || ''
+  };
+  return true;
+}
+
 async function loadAylaV2Catalog(options = {}){
   const background = !!options.background;
   aylaV2CatalogState = { ...aylaV2CatalogState, status: background ? 'refreshing' : 'loading', error: '' };
@@ -2824,18 +2835,24 @@ async function loadAylaV2Catalog(options = {}){
     const rows = Array.isArray(payload.products) ? payload.products : [];
     const incoming = buildAylaV2Products(rows);
     const previous = loadProductsCache();
-    const accepted = mergeAylaV2Products(incoming, previous?.products || []);
-    const catalogVersion = String(payload.catalogVersion || payload.generatedAt || `${rows.length}:${accepted.length}`);
-    const fingerprint = accepted.map(item => [item.sourceId, item.title || item.name, item.priceRetail, item.image || '', item.category].join('~')).join('|');
+    // The backend marks the public response complete only after applying active-product filters.
+    // A complete response is authoritative and must prune stale cached products; incomplete/legacy
+    // responses retain the safe merge behavior so a partial source read cannot hide products.
+    const responseIsComplete = payload.complete === true;
+    const accepted = responseIsComplete ? incoming : mergeAylaV2Products(incoming, previous?.products || []);
+    const reportedProductCount = Number(payload.productCount);
+    const catalogTotal = Number.isFinite(reportedProductCount) ? reportedProductCount : Math.max(rows.length, accepted.length);
+    const catalogVersion = String(payload.catalogVersion || payload.generatedAt || `${catalogTotal}:${accepted.length}`);
+    const fingerprint = accepted.map(item => [item.sourceId, item.name, item.priceRetail, item.image || '', item.category].join('~')).join('|');
     const changed = !previous || previous.catalogVersion !== catalogVersion || previous.fingerprint !== fingerprint || previous.products.length !== accepted.length;
     notifyImageCache(imageUrlsFromProducts(accepted));
     if (changed){
       PRODUCTS_DATA.splice(0, PRODUCTS_DATA.length, ...accepted);
-      saveProductsCache({ catalogVersion, fingerprint, generatedAt: payload.generatedAt || null, total: Math.max(rows.length, accepted.length), savedAt: Date.now(), products: accepted });
+      saveProductsCache({ catalogVersion, fingerprint, generatedAt: payload.generatedAt || null, total: catalogTotal, savedAt: Date.now(), products: accepted });
       prefetchNewProductImages(accepted, previous?.products || []);
     }
     requestPersistentStorage();
-    aylaV2CatalogState = { status: 'success', total: Math.max(rows.length, accepted.length), accepted: accepted.length, rejected: Math.max(0, rows.length - incoming.length), lastSync: Date.now(), error: '', catalogVersion };
+    aylaV2CatalogState = { status: 'success', total: catalogTotal, accepted: accepted.length, rejected: Math.max(0, catalogTotal - accepted.length), lastSync: Date.now(), error: '', catalogVersion };
     if (changed && typeof renderApp === 'function') renderApp();
     if (typeof renderAylaSyncAgent === 'function' && document.getElementById('syncAgentBox')?.style.display === 'block') renderAylaSyncAgent();
     return accepted;
@@ -3169,7 +3186,7 @@ function renderApp(){
   if(greetingEl){
     const savedVisitorName = localStorage.getItem('alaseel_visitor_name') || localStorage.getItem('alaseel_name');
     if(savedVisitorName){
-      const isReturning = !!localStorage.getItem('alaseel_phone');
+      const isReturning = localStorage.getItem('alaseel_visitor_phone') && localStorage.getItem('alaseel_visit_count') > 1;
       greetingEl.textContent = isReturning ? `نورت من جديد يا ${savedVisitorName} ✨` : `أهلاً ${savedVisitorName} 👋`;
       greetingEl.style.display = 'block';
     } else {
@@ -3364,12 +3381,12 @@ function openMyOrders(){
 }
 
 async function loadMyOrders(){
-  const phone = localStorage.getItem('alaseel_phone');
+  const phone = localStorage.getItem('alaseel_visitor_phone');
   const label = document.getElementById('myOrdersPhoneLabel');
   const list = document.getElementById('myOrdersList');
   if(!phone){
     label.textContent = '';
-    list.innerHTML = '<div style="text-align:center;color:var(--gray);padding:20px 8px;">📦 بعد أول طلبية إلك، رح تلاقي طلباتك هون تلقائياً.</div>';
+    list.innerHTML = '<div style="text-align:center;color:var(--gray);padding:20px 8px;">لازم يكون فيه رقم جوال مسجّل من شاشة الدخول أولاً.</div>';
     return;
   }
   label.textContent = `عرض الطلبات المسجّلة برقم: ${phone}`;
@@ -3475,7 +3492,7 @@ function renderAylaSyncAgent(){
   if (!box) return;
   const keys = Object.keys(CATEGORIES);
   const liveCount = PRODUCTS_DATA.filter(p => !p.__isOffer && !p.__isSpecialOffer).length;
-  box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><button onclick="openAdminHub()" style="background:#3A2F1B;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:800;">← الأدوات</button><div style="color:#fff;font-weight:900;font-size:17px;">🔄 Ayla Sync Agent</div></div><div style="background:#173847;border:1px solid #5B95B8;border-radius:14px;padding:14px;color:#d9f2ff;margin-bottom:12px;"><div style="font-weight:900;font-size:14px;margin-bottom:7px;">المسار الفعال</div><div style="font-size:11px;line-height:1.7;">الوكيل العامل: <b>Ayla Sync Agent</b><br>المصدر: Moontak Express<br>الربط: الرابط الأصلي العامل<br>الأقسام المعتمدة للفلترة: <b>${AYLA_V2_ALLOWED_CATEGORY_KEYS.length}</b><br>الأصناف الظاهرة من Ayla V2: <b>${aylaV2CatalogState.accepted || liveCount}</b><br>حالة المصدر: <b>${aylaV2CatalogState.status}</b></div></div><div style="background:#9C7A24;border-radius:14px;padding:14px;color:#fff;margin-bottom:12px;"><div style="font-weight:900;margin-bottom:8px;">تشغيل الوكيل</div><div style="font-size:11px;color:#fff3c2;line-height:1.7;margin-bottom:10px;">Ayla V2 هو مصدر المنتجات الوحيد للواجهة، ويعرض فقط المنتجات المطابقة للأقسام الثلاثين الثابتة داخل التطبيق.</div><button onclick="forceAccurateProductRefresh('aylaSyncResult')" style="width:100%;padding:11px;border:none;border-radius:9px;background:#5B95B8;color:#fff;font-weight:900;cursor:pointer;">↻ تحديث منتجات Ayla V2 الآن</button><div id="aylaSyncResult" style="font-size:11px;line-height:1.6;margin-top:10px;min-height:18px;"></div></div><div style="background:#3A2F1B;border-radius:14px;padding:12px;color:#fff;"><div style="font-weight:900;font-size:13px;margin-bottom:7px;">الأقسام الأصلية المستخدمة</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:10px;color:#e8d99e;">${keys.map(k => `<span>• ${CATEGORIES[k].name}</span>`).join('')}</div></div>`;
+  box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><button onclick="openAdminHub()" style="background:#3A2F1B;color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:800;">← الأدوات</button><div style="color:#fff;font-weight:900;font-size:17px;">🔄 Ayla Sync Agent</div></div><div style="background:#173847;border:1px solid #5B95B8;border-radius:14px;padding:14px;color:#d9f2ff;margin-bottom:12px;"><div style="font-weight:900;font-size:14px;margin-bottom:7px;">المسار الفعال</div><div style="font-size:11px;line-height:1.7;">الوكيل العامل: <b>Ayla Sync Agent</b><br>المصدر: Moontak Express<br>الربط: الرابط الأصلي العامل<br>الأقسام المعتمدة للفلترة: <b>${AYLA_V2_ALLOWED_CATEGORY_KEYS.length}</b><br>الأصناف الظاهرة من Ayla V2: <b>${Number.isFinite(aylaV2CatalogState.accepted) ? aylaV2CatalogState.accepted : liveCount}</b><br>حالة المصدر: <b>${aylaV2CatalogState.status}</b>${aylaV2CatalogState.status === 'offline' ? '<br><span style="color:#ffd7a0">المعروض آخر نسخة محفوظة، وسيُحدّث العدد عند عودة الاتصال.</span>' : ''}</div></div><div style="background:#9C7A24;border-radius:14px;padding:14px;color:#fff;margin-bottom:12px;"><div style="font-weight:900;margin-bottom:8px;">تشغيل الوكيل</div><div style="font-size:11px;color:#fff3c2;line-height:1.7;margin-bottom:10px;">Ayla V2 هو مصدر المنتجات الوحيد للواجهة، ويعرض فقط المنتجات المطابقة للأقسام الثلاثين الثابتة داخل التطبيق.</div><button onclick="forceAccurateProductRefresh('aylaSyncResult')" style="width:100%;padding:11px;border:none;border-radius:9px;background:#5B95B8;color:#fff;font-weight:900;cursor:pointer;">↻ تحديث منتجات Ayla V2 الآن</button><div id="aylaSyncResult" style="font-size:11px;line-height:1.6;margin-top:10px;min-height:18px;"></div></div><div style="background:#3A2F1B;border-radius:14px;padding:12px;color:#fff;"><div style="font-weight:900;font-size:13px;margin-bottom:7px;">الأقسام الأصلية المستخدمة</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:10px;color:#e8d99e;">${keys.map(k => `<span>• ${CATEGORIES[k].name}</span>`).join('')}</div></div>`;
 }
 function openAylaSyncAgentExternal(){
   window.open(AYLA_SYNC_AGENT_URL, '_blank', 'noopener,noreferrer');
