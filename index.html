@@ -2755,6 +2755,48 @@ function renderAdminBlocklist(files){
 // تصنيف فرعي تلقائي بالاعتماد على كلمات بعنوان المنتج، لتفعيل فلاتر الأقسام الفرعية
 // (منتجات Ayla V2 لا تملك حقل sub جاهز من المصدر، لذلك نستنتجه هنا من الاسم).
 const AYLA_V2_SUB_RULES = {
+  foodstuffs: [
+    { sub: 'rice', words: ['رز', 'أرز', 'ارز'] },
+    { sub: 'sugar_salt', words: ['سكر', 'ملح'] },
+    { sub: 'legumes', words: ['عدس', 'حمص', 'فاصوليا', 'فول', 'برغل', 'فريكة'] },
+    { sub: 'pasta', words: ['معكرونة', 'مكرونة', 'باستا', 'شعيرية', 'سباغيتي', 'نودلز', 'اندومي', 'إندومي'] }
+  ],
+  legumes_spices: [
+    { sub: 'spices', words: ['بهار', 'بهارات', 'كمون', 'قرفة', 'كركم', 'فلفل', 'زعتر', 'بابريكا', 'هيل', 'سماق'] },
+    { sub: 'legumes', words: ['عدس', 'حمص', 'فاصوليا', 'فول', 'برغل', 'فريكة', 'كينوا'] },
+    { sub: 'roastery', words: ['بزر', 'بذور', 'مكسرات', 'لوز', 'جوز', 'كاجو', 'فستق', 'زبيب'] }
+  ],
+  sweets_snacks: [
+    { sub: 'chips', words: ['شيبس', 'فشار', 'بوب كورن'] },
+    { sub: 'chocolate', words: ['شوكولاتة', 'شوكولا'] },
+    { sub: 'biscuits', words: ['بسكويت', 'ويفر', 'وافر'] },
+    { sub: 'candy', words: ['سكاكر', 'ملبس', 'توفي', 'جيلي', 'مصاص', 'حلوى'] },
+    { sub: 'nuts', words: ['مكسرات', 'فستق', 'لوز', 'كاجو', 'جوز', 'بزر'] }
+  ],
+  pasta: [
+    { sub: 'pasta', words: ['معكرونة', 'مكرونة', 'باستا', 'سباغيتي', 'فوسيلي', 'لازانيا', 'فارفلي', 'بيني'] },
+    { sub: 'noodles', words: ['نودلز', 'اندومي', 'إندومي', 'رامن'] }
+  ],
+  tahini_jam: [
+    { sub: 'tahini_halawa', words: ['طحينية', 'طحينه', 'حلاوة', 'حلاه'] },
+    { sub: 'jam', words: ['مربى', 'مربا', 'مربيات'] }
+  ],
+  sauces_condiments: [
+    { sub: 'tomato', words: ['كاتشب', 'معجون طماطم', 'رب البندورة'] },
+    { sub: 'mayonnaise', words: ['مايونيز'] },
+    { sub: 'hot_sauce', words: ['شطة', 'فلفل حار'] },
+    { sub: 'vinegar', words: ['خل', 'دبس'] }
+  ],
+  personal_care: [
+    { sub: 'hair', words: ['شامبو', 'بلسم', 'شعر'] },
+    { sub: 'body', words: ['صابون', 'شاور', 'استحمام'] },
+    { sub: 'paper', words: ['مناديل', 'فوط'] }
+  ],
+  detergents: [
+    { sub: 'laundry', words: ['غسيل', 'مسحوق', 'منظف ملابس'] },
+    { sub: 'dishwashing', words: ['جلي', 'صحون', 'سائل جلي'] },
+    { sub: 'surface', words: ['أرضيات', 'زجاج', 'كلور', 'مطهر'] }
+  ],
   oil_ghee: [
     { sub: 'olive', words: ['زيت زيتون'] },
     { sub: 'sunflower', words: ['زيت شمس', 'دوار الشمس'] },
@@ -2807,6 +2849,12 @@ const AYLA_V2_SUB_RULES = {
   ]
 };
 const AYLA_V2_SUB_FALLBACK_OTHER = new Set(['juices_drinks', 'canned_goods', 'frozen_chilled']);
+const AYLA_V2_SUB_NAMES = {
+  rice:'أرز', sugar_salt:'سكر وملح', legumes:'بقوليات', pasta:'معكرونة', noodles:'نودلز', spices:'بهارات', roastery:'محمص',
+  chips:'شيبس', chocolate:'شوكولاتة', biscuits:'بسكويت', candy:'سكاكر', nuts:'مكسرات', tahini_halawa:'طحينية وحلاوة', jam:'مربى',
+  tomato:'طماطم وكاتشب', mayonnaise:'مايونيز', hot_sauce:'حار', vinegar:'خل ودبس', hair:'العناية بالشعر', body:'العناية بالجسم',
+  paper:'مناديل وفوط', laundry:'غسيل الملابس', dishwashing:'جلي الصحون', surface:'تنظيف الأسطح'
+};
 function classifyAylaV2Sub(category, title){
   const rules = AYLA_V2_SUB_RULES[category];
   if (!rules) return '';
@@ -2814,6 +2862,7 @@ function classifyAylaV2Sub(category, title){
   for (const rule of rules) { if (rule.words.some(w => text.includes(w))) return rule.sub; }
   return AYLA_V2_SUB_FALLBACK_OTHER.has(category) ? 'other' : '';
 }
+function aylaSubLabel(key){ return AYLA_V2_SUB_NAMES[key] || (key === 'other' ? 'أخرى' : key); }
 // مصدر Moontak 139-0 يجمع البقوليات والبهارات والمحمص في قائمة واحدة.
 // نعيد تصنيف المنتجات محليًا داخل الأقسام الثابتة دون تكرار أو إنشاء كتالوج جديد.
 const AYLA_V2_MIXED_139_SPICE_WORDS = [
@@ -2845,7 +2894,9 @@ function buildAylaV2Products(rows){
       name: String(item.title || '').trim(), unit: '', category, priceRetail: price, priceWholesale: 0,
       image: getAylaV2ImageUrl(item.imageUrl), description: item.description || '', outOfStock: item.isAvailable === false,
       pendingApproval: false, company: 'Ayla V2',
-      sub: classifyAylaV2Sub(category, item.title) || undefined
+      sub: classifyAylaV2Sub(category, item.title) || undefined,
+      sourceSubcategoryKey: item.subcategoryKey || 'all',
+      sourceSubcategoryName: item.subcategoryName || 'أخرى'
     });
   });
   return accepted;
@@ -2857,7 +2908,9 @@ function mergeAylaV2Products(incoming, previousProducts){
   const incomingBySource = new Map(incoming.map(product => [String(product.sourceId), product]));
   const merged = previousProducts.map(previous => {
     const fresh = incomingBySource.get(String(previous.sourceId));
-    if (!fresh) return previous;
+    // A partial Moontak read must never remove a known product. Keep it visible
+    // and make the state explicit until the source returns it in a later batch.
+    if (!fresh) return { ...previous, outOfStock: true };
     if (!fresh.image && previous.image) fresh.image = previous.image;
     incomingBySource.delete(String(previous.sourceId));
     return fresh;
@@ -6972,6 +7025,37 @@ function renderItemsView(){
         color:${activeSub===s.key ? '#fff' : 'var(--ink)'};
       ">${s.name}</button>`).join('');
     if(activeSub !== 'all') subset = subset.filter(p => p.sub === activeSub);
+  } else if (!searchQuery) {
+    // فلتر عام لكل قسم رئيسي لم يكن له شريط مخصص.
+    // نعتمد تصنيف الاسم للأقسام العامة، ثم نعود إلى مفتاح Agent عند الحاجة.
+    const sourceSubgroups = [];
+    const seenSourceSubgroups = new Set();
+    subset.forEach(p => {
+      const key = p.sub || p.sourceSubcategoryKey || 'all';
+      const name = p.sub ? aylaSubLabel(p.sub) : (p.sourceSubcategoryName || 'أخرى');
+      if (key !== 'all' && !seenSourceSubgroups.has(key)) {
+        seenSourceSubgroups.add(key);
+        sourceSubgroups.push({ key, name });
+      }
+    });
+    if (sourceSubgroups.length > 1) {
+      sourceSubgroups.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+      const options = [{ key: 'all', name: 'الكل' }, ...sourceSubgroups];
+      subBar.style.display = 'flex';
+      subBar.innerHTML = options.map(s => `
+        <button onclick="setGenericSourceSub('${String(s.key).replace(/'/g, "\\'")}')" style="
+          flex-shrink:0; padding:7px 16px; border-radius:20px; font-family:'Tajawal',sans-serif;
+          font-size:13px; font-weight:700; cursor:pointer; transition:0.2s;
+          border:1.5px solid ${activeSub===s.key ? 'var(--green)' : 'var(--line)'};
+          background:${activeSub===s.key ? 'var(--green)' : '#fff'};
+          color:${activeSub===s.key ? '#fff' : 'var(--ink)'};
+        ">${s.name}</button>`).join('');
+      if (activeSub !== 'all' && seenSourceSubgroups.has(activeSub)) {
+        subset = subset.filter(p => (p.sub || p.sourceSubcategoryKey || 'all') === activeSub);
+      }
+    } else {
+      subBar.style.display = 'none';
+    }
   } else {
     subBar.style.display = 'none';
   }
@@ -7180,6 +7264,11 @@ function setCannedSub(key){
 }
 
 function setBakingSub(key){
+  activeSub = key;
+  renderItemsView();
+}
+
+function setGenericSourceSub(key){
   activeSub = key;
   renderItemsView();
 }
