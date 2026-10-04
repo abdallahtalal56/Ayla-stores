@@ -5,6 +5,7 @@ const DATA_CACHE = `${SW_VERSION}-data`;
 const IMAGE_CACHE = 'ayla-images-v1';
 const IMAGE_MANIFEST_REQUEST = new Request('./__ayla-image-manifest__.json');
 const MAX_IMAGE_ENTRIES = 4000;
+const AYLA_STOREFRONT_URL = 'https://ayla-store1.pages.dev/';
 const ACTIVE_CACHES = new Set([SHELL_CACHE, DATA_CACHE, IMAGE_CACHE]);
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
@@ -112,13 +113,13 @@ self.addEventListener('push', event => {
   try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text?.() || '' }; }
   event.waitUntil(self.registration.showNotification(data.title || 'ايلا ستورز', {
     body: data.body || 'يوجد تحديث جديد في متجر ايلا.', icon: data.icon || './icon-192.png', badge: data.badge || './icon-192.png',
-    dir: 'rtl', lang: 'ar', renotify: false, data: { url: data.url || './index.html' }, tag: data.tag || 'ayla-store-update'
+    dir: 'rtl', lang: 'ar', renotify: false, data: { url: data.url || AYLA_STOREFRONT_URL }, tag: data.tag || 'ayla-store-update'
   }));
 });
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const target = event.notification.data?.url || './index.html';
+  const target = event.notification.data?.url || AYLA_STOREFRONT_URL;
   event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
     const sameOrigin = list.find(client => new URL(client.url).origin === self.location.origin);
     if (sameOrigin) return sameOrigin.focus().then(() => sameOrigin.navigate(target));
