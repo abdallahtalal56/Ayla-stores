@@ -1545,14 +1545,14 @@ function showCustomerRegistration(message = ''){
   const form = modal.querySelector('#aylaCustomerForm'); const submit = modal.querySelector('#aylaCustomerSubmit'); const error = modal.querySelector('#aylaCustomerError');
   form.addEventListener('submit', async event => { event.preventDefault(); submit.disabled = true; submit.textContent = 'جارٍ الحفظ...'; error.textContent = '';
     const data = new FormData(form);
-    try { const response = await customerRequest('/register', { method:'POST', body:JSON.stringify({ phone:data.get('phone'), name:data.get('name'), governorate:'مادبا', district:data.get('district'), address:data.get('address'), consent:data.get('consent') === 'on' }) }); const payload = await response.json().catch(() => ({})); if (!response.ok || !payload.sessionToken) throw new Error(payload.message || 'تعذر حفظ البيانات، حاول مرة أخرى.'); localStorage.setItem(AYLA_CUSTOMER_SESSION_KEY, payload.sessionToken); closeCustomerRegistration(); if (typeof showPwaAction === 'function') showPwaAction({ title:'تم التسجيل بنجاح', text:`أهلاً ${payload.customer?.name || ''}، يمكنك الآن متابعة التسوق.`, actionLabel:'حسنًا', onAction:()=>{ const banner=getPwaActionBanner(); if (banner) banner.style.display='none'; } }); }
+    try { const response = await customerRequest('/register', { method:'POST', body:JSON.stringify({ phone:data.get('phone'), name:data.get('name'), governorate:'مادبا', district:data.get('district'), address:data.get('address'), consent:data.get('consent') === 'on' }) }); const payload = await response.json().catch(() => ({})); if (!response.ok || !payload.sessionToken) throw new Error(payload.message || 'تعذر حفظ البيانات، حاول مرة أخرى.'); localStorage.setItem(AYLA_CUSTOMER_SESSION_KEY, payload.sessionToken); closeCustomerRegistration(); if (typeof showPwaAction === 'function') showPwaAction({ title:'تم التسجيل بنجاح', text:`أهلاً ${payload.customer?.name || ''}، يمكنك الآن متابعة التسوق.`, actionLabel:'حسنًا', onAction:()=>{ const banner=getPwaActionBanner(); if (banner) banner.style.display='none'; } }); setTimeout(promptAylaPushAfterCustomerLogin, 650); }
     catch (err) { error.textContent = err?.message || 'تعذر الاتصال بالخدمة.'; submit.disabled = false; submit.textContent = 'متابعة إلى المتجر'; }
   });
 }
 async function ensureAylaCustomerSession(){
   const session = customerSession();
   if (!session) return showCustomerRegistration();
-  try { const response = await customerRequest('/me'); if (response.ok) return; localStorage.removeItem(AYLA_CUSTOMER_SESSION_KEY); showCustomerRegistration('انتهت الجلسة، يرجى تحديث بياناتك مرة واحدة.'); }
+  try { const response = await customerRequest('/me'); if (response.ok) { setTimeout(promptAylaPushAfterCustomerLogin, 650); return; } localStorage.removeItem(AYLA_CUSTOMER_SESSION_KEY); showCustomerRegistration('انتهت الجلسة، يرجى تحديث بياناتك مرة واحدة.'); }
   catch { /* keep the cached session and let the store remain usable offline */ }
 }
 
@@ -1585,6 +1585,29 @@ async function ensureAylaPushSubscription({ interactive = false } = {}){
 }
 async function enableAylaPush(){ return ensureAylaPushSubscription({ interactive: true }); }
 async function syncAylaPushIfEnabled(){ if (!pushLocallyEnabled()) return false; try { return await ensureAylaPushSubscription(); } catch (error) { console.warn('[Ayla Push] auto resubscribe failed', error); return false; } }
+function promptAylaPushAfterCustomerLogin(){
+  if (!pushSupported() || pushLocallyEnabled()) return;
+  if (Notification.permission === 'granted') { ensureAylaPushSubscription().catch(error => console.warn('[Ayla Push] granted permission resubscribe failed', error)); return; }
+  if (Notification.permission === 'denied') {
+    showPwaAction({
+      title: 'فعّل إشعارات ايلا ستورز',
+      text: 'الإشعارات مرفوضة من إعدادات المتصفح. افتح إعدادات الموقع، اسمح بالإشعارات، ثم أعد فتح المتجر.',
+      actionLabel: 'حسنًا', dismissKey: 'ayla_push_denied_notice_v1',
+      onAction: () => { getPwaActionBanner().style.display = 'none'; }
+    });
+    return;
+  }
+  showPwaAction({
+    title: 'بدك توصلك العروض الجديدة؟',
+    text: 'اضغط تفعيل الآن للسماح بإشعارات العروض والمنتجات الجديدة على هذا الجهاز.',
+    actionLabel: 'فعّل الآن', dismissKey: 'ayla_push_prompt_seen_v1',
+    onAction: async () => {
+      const button = document.getElementById('aylaPwaPrimaryAction'); if (button) button.disabled = true;
+      try { await enableAylaPush(); getPwaActionBanner().style.display = 'none'; }
+      catch (error) { showPwaAction({ title:'تعذر تفعيل الإشعارات', text:error?.message || 'اسمح بالإشعارات من إعدادات المتصفح ثم حاول مرة أخرى.', actionLabel:'حسنًا', onAction:()=>{ getPwaActionBanner().style.display='none'; } }); }
+    }
+  });
+}
 async function disableAylaPush(){
   if (!pushSupported()) return;
   const registration = await navigator.serviceWorker.ready; const subscription = await registration.pushManager.getSubscription();
