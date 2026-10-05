@@ -2912,10 +2912,11 @@ function buildAylaV2Products(rows){
     const price = Number(item.priceRetail);
     if (!Number.isFinite(price) || price < 0) return;
     seen.add(sourceId);
+    const unavailable = item.isAvailable === false || item.outOfStock === true || item.available === false;
     accepted.push({
       id: AYLA_V2_ID_OFFSET + Number(item.id || index + 1), sourceId, __source: 'ayla-v2',
       name: String(item.title || '').trim(), unit: '', category, priceRetail: price, priceWholesale: 0,
-      image: getAylaV2ImageUrl(item.imageUrl), description: item.description || '', outOfStock: item.isAvailable === false,
+      image: getAylaV2ImageUrl(item.imageUrl), description: item.description || '', outOfStock: unavailable,
       pendingApproval: false, company: 'Ayla V2',
       sub: classifyAylaV2Sub(category, item.title) || undefined,
       sourceSubcategoryKey: item.subcategoryKey || 'all',
@@ -2923,6 +2924,13 @@ function buildAylaV2Products(rows){
     });
   });
   return accepted;
+}
+function removeUnavailableFromCart(products){
+  let changed = false;
+  (products || []).forEach(product => {
+    if (product.outOfStock && cart[product.id]) { delete cart[product.id]; changed = true; }
+  });
+  if (changed) { saveCartToStorage(); updateCartPreview(); }
 }
 // حماية من نتائج المصدر الجزئية: لا نحذف منتجًا محفوظًا إذا أعاد المصدر دفعة ناقصة مؤقتًا.
 // المنتجات الموجودة تُحدّث من المصدر، والمنتجات الجديدة تُضاف، أما المنتج الغائب مؤقتًا فيبقى محفوظًا.
@@ -2971,6 +2979,7 @@ async function loadAylaV2Catalog(options = {}){
     // responses retain the safe merge behavior so a partial source read cannot hide products.
     const responseIsComplete = payload.complete === true;
     const accepted = responseIsComplete ? incoming : mergeAylaV2Products(incoming, previous?.products || []);
+    removeUnavailableFromCart(accepted);
     const reportedProductCount = Number(payload.productCount);
     const catalogTotal = Number.isFinite(reportedProductCount) ? reportedProductCount : Math.max(rows.length, accepted.length);
     const catalogVersion = String(payload.catalogVersion || payload.generatedAt || `${catalogTotal}:${accepted.length}`);
