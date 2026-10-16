@@ -2962,6 +2962,7 @@ function hydrateAylaV2FromCache(){
 
 async function loadAylaV2Catalog(options = {}){
   const background = !!options.background;
+  const silentFallback = !!options.silentFallback;
   aylaV2CatalogState = { ...aylaV2CatalogState, status: background ? 'refreshing' : 'loading', error: '' };
   try {
     const requestUrl = `${AYLA_V2_CATALOG_API}?client=ayla-store&refresh=${Date.now()}`;
@@ -2998,8 +2999,12 @@ async function loadAylaV2Catalog(options = {}){
     return accepted;
   } catch (error) {
     if (PRODUCTS_DATA.length){
-      aylaV2CatalogState = { ...aylaV2CatalogState, status: 'offline', error: '' };
-      setOfflineUi(true);
+      const actuallyOffline = navigator.onLine === false;
+      aylaV2CatalogState = { ...aylaV2CatalogState, status: actuallyOffline ? 'offline' : 'cached', error: '' };
+      // A transient API timeout while the device is online must not be shown as
+      // an offline warning on every startup. The saved catalog remains usable;
+      // the explicit banner is reserved for a real offline state.
+      if (actuallyOffline && !silentFallback) setOfflineUi(true);
       return PRODUCTS_DATA;
     }
     aylaV2CatalogState = { ...aylaV2CatalogState, status: 'error', error: error?.message || 'تعذر تحميل كتالوج Ayla V2' };
@@ -7912,7 +7917,7 @@ function startApp(){
   // اعرض آخر كتالوج محفوظ فورًا، ثم حدّثه في الخلفية بدون شاشة انتظار مزعجة.
   const hasCachedCatalog = hydrateAylaV2FromCache();
   enterRetailMode();
-  loadAylaV2Catalog({ background: hasCachedCatalog }).catch(error => console.error('تعذّر تحميل Ayla V2:', error));
+  loadAylaV2Catalog({ background: hasCachedCatalog, silentFallback: hasCachedCatalog }).catch(error => console.error('تعذّر تحميل Ayla V2:', error));
 }
 // دخول المتجر: مجرد إخفاء شاشة الترحيب، بدون أي بيانات أو تحقق — التحميل الفعلي أصلاً صاير بالخلفية من قبل ما تنضغط الزر.
 function enterStoreFromGate(){
