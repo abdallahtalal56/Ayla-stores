@@ -1,4 +1,4 @@
-const SW_VERSION = 'ayla-pwa-premium-v16-offline-banner-fix';
+const SW_VERSION = 'ayla-pwa-premium-v19-stock-order';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const DATA_CACHE = `${SW_VERSION}-data`;
 // هذا الكاش ثابت حتى لا تُحذف صور المنتجات عند تحديث الواجهة أو Service Worker.
@@ -6,6 +6,7 @@ const IMAGE_CACHE = 'ayla-images-v1';
 const IMAGE_MANIFEST_REQUEST = new Request('./__ayla-image-manifest__.json');
 const MAX_IMAGE_ENTRIES = 4000;
 const AYLA_STOREFRONT_URL = 'https://ayla-store1.pages.dev/';
+const AYLA_NOTIFICATION_ICON = `${AYLA_STOREFRONT_URL}icon-192.png`;
 const ACTIVE_CACHES = new Set([SHELL_CACHE, DATA_CACHE, IMAGE_CACHE]);
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
@@ -112,7 +113,8 @@ self.addEventListener('push', event => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text?.() || '' }; }
   event.waitUntil(self.registration.showNotification(data.title || 'ايلا ستورز', {
-    body: data.body || 'يوجد تحديث جديد في متجر ايلا.', icon: data.icon || './icon-192.png', badge: data.badge || './icon-192.png',
+    body: data.body || 'يوجد تحديث جديد في متجر ايلا.', icon: AYLA_NOTIFICATION_ICON, badge: AYLA_NOTIFICATION_ICON,
+    actions: Array.isArray(data.actions) && data.actions.length ? data.actions : [{ action: 'open-store', title: 'فتح المتجر' }],
     dir: 'rtl', lang: 'ar', renotify: false, data: { url: data.url || AYLA_STOREFRONT_URL }, tag: data.tag || 'ayla-store-update'
   }));
 });
