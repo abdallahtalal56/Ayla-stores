@@ -2995,6 +2995,7 @@ async function loadAylaV2Catalog(options = {}){
     requestPersistentStorage();
     aylaV2CatalogState = { status: 'success', total: catalogTotal, accepted: accepted.length, rejected: Math.max(0, catalogTotal - accepted.length), lastSync: Date.now(), error: '', catalogVersion };
     if (changed && typeof renderApp === 'function') renderApp();
+    if (typeof handleInitialDeepLink === 'function') handleInitialDeepLink();
     if (typeof renderAylaSyncAgent === 'function' && document.getElementById('syncAgentBox')?.style.display === 'block') renderAylaSyncAgent();
     return accepted;
   } catch (error) {
@@ -7189,6 +7190,14 @@ function renderItemsView(){
     subset = subset.filter(p => !p.subsub);
   }
 
+  // المتاح يظهر أولاً، والنافد يبقى محفوظًا لكنه ينتقل لآخر القائمة.
+  // نستخدم ترتيبًا مستقرًا حتى يحافظ كل منتج على ترتيبه الطبيعي، ويعود إليه
+  // تلقائيًا عندما يصبح متاحًا من جديد.
+  subset = subset.map((p, idx) => ({ p, idx })).sort((a, b) => {
+    const stockA = a.p.outOfStock ? 1 : 0;
+    const stockB = b.p.outOfStock ? 1 : 0;
+    return stockA - stockB || a.idx - b.idx;
+  }).map(x => x.p);
   window._currentItemsSubset = subset;
   if(subset.length === 0 && !subBrandCardsHtml && !subSectionCardsHtml && !companyIntroHtml){
     target.innerHTML = `<div class="empty-msg">هذا القسم تحت المعالجة، انتظرونا قريبًا 📦</div>`;
@@ -8468,6 +8477,15 @@ function handleInitialDeepLink(){
   if (!raw) return;
   let key;
   try { key = decodeURIComponent(raw); } catch(e){ key = raw; }
+  if (key.startsWith('product::')) {
+    const productId = key.slice(9).split('::')[0];
+    const product = PRODUCTS_DATA.find(item => String(item.sourceId || item.id) === String(productId) || String(item.id) === String(productId));
+    if (!product) return;
+    appMode = 'store'; wholesaleUnlocked = false; viewLevel = 'items'; activeCat = product.category; searchQuery = product.name; activeSub = 'all';
+    history.replaceState({ appMode, wholesaleUnlocked, viewLevel, activeCat, searchQuery }, '', `${location.pathname}#${encodeURIComponent(`product::${productId}`)}`);
+    renderApp();
+    return;
+  }
   if (!key.startsWith('brand::')) return;
   const brandName = key.slice(7).split('::')[0];
   const validKeys = getWholesaleBrandCats().map(c => c.key);
