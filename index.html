@@ -3358,6 +3358,7 @@ function handleBackButton(){
     if (activeCat === '__retail_offers__'){
       // الرجوع من تفاصيل عرض معيّن بيرجعنا للشاشة الرئيسية (شبكة الأقسام) مباشرة
       activeOfferId = null;
+      _retailPromoProductDetail = null;
       activeCat = null;
       viewLevel = 'categories';
       pushNavState();
@@ -3417,14 +3418,28 @@ function enterWholesaleModeGated(){
   enterWholesaleMode();
 }
 function enterRetailMode(){
-  appMode = 'store'; wholesaleUnlocked = false; viewLevel = 'categories'; activeCat = null; searchQuery = ''; activeSub = 'all'; activeOfferId = null;
+  appMode = 'store'; wholesaleUnlocked = false; viewLevel = 'categories'; activeCat = null; searchQuery = ''; activeSub = 'all'; activeOfferId = null; _retailPromoProductDetail = null;
   pushNavState(); renderApp(); loadCachedInfo();
 }
 // فتح تفاصيل عرض معيّن (من الشريط الأفقي "عروضنا المميزة" بالصفحة الرئيسية)
 function openOfferDetail(id){
+  _retailPromoProductDetail = null;
   activeCat = '__retail_offers__';
   viewLevel = 'items';
   activeOfferId = id;
+  pushNavState();
+  renderApp();
+}
+function openRicePromoProductDetail(){
+  const product = PRODUCTS_DATA.find(p => String(p.sourceId || p.sourceProductId || '') === TODAY_RICE_PROMO_SOURCE_ID);
+  if (!product){
+    alert('تفاصيل أرز مصطفى غير متاحة حالياً. جرّبي تحديث المتجر بعد اكتمال المزامنة.');
+    return;
+  }
+  _retailPromoProductDetail = product;
+  activeCat = '__retail_offers__';
+  viewLevel = 'items';
+  activeOfferId = product.id;
   pushNavState();
   renderApp();
 }
@@ -6307,6 +6322,8 @@ const TODAY_RICE_PROMO = {
   promoPrice: '4.75 د.أ فقط',
   promoSub: 'العرض متاح لغاية الساعة 10 مساءً اليوم'
 };
+const TODAY_RICE_PROMO_SOURCE_ID = '721';
+let _retailPromoProductDetail = null;
 
 // اللوحة الذكية بقسم المفرق: بتبني نفسها تلقائياً من بيانات العرض المختار (صورة/اسم/سعر)، أو من فيديو/GIF لو مضاف
 let _retailAdIndex = 0;
@@ -6335,7 +6352,7 @@ function renderRetailAdBanner(){
   viewport.innerHTML = featured.map((f, i) => {
     const p = f.p;
     if (f.promo) return `
-    <div class="retail-ad-slide${i === 0 ? ' active' : ''}" data-idx="${i}">
+    <div class="retail-ad-slide${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="openRicePromoProductDetail()" role="button" tabindex="0" aria-label="فتح تفاصيل أرز مصطفى">
       <img src="./rice-mustafa-promo.jpg" alt="أرز مصطفى الهندي 4 كيلو" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff8e7;">
       <div class="retail-ad-slide-overlay">
         <div class="retail-ad-slide-title">${f.promo.promoTitle}</div>
@@ -6872,6 +6889,9 @@ function renderItemsView(){
     const subBar = document.getElementById('subcatBar');
     if (subBar) subBar.style.display = 'none';
     let offers = PRODUCTS_DATA.filter(p => p.__isOffer || p.__isSpecialOffer);
+    if (_retailPromoProductDetail && !offers.some(p => p.id === _retailPromoProductDetail.id)) {
+      offers = [_retailPromoProductDetail, ...offers];
+    }
     if (searchQuery) offers = offers.filter(p => p.name.includes(searchQuery));
     offers = offers.map((p, idx) => ({ p, idx })).sort((a, b) => {
       const oa = a.p.order !== undefined ? a.p.order : a.idx;
@@ -6897,7 +6917,7 @@ function renderItemsView(){
       const outOfStockBadge = p.outOfStock ? `<div style="position:absolute; top:0; right:0; left:0; bottom:0; background:rgba(20,20,20,0.55); z-index:4; display:flex; align-items:center; justify-content:center;"><div style="background:#b33; color:#fff; font-weight:900; font-size:13px; padding:6px 16px; border-radius:20px; transform:rotate(-8deg); box-shadow:0 2px 8px rgba(0,0,0,0.4);">العرض انتهى</div></div>` : '';
       target.innerHTML = `
         <div class="offer-card">
-          ${(adminEditMode) ? `<button onclick="event.stopPropagation(); ${p.__isSpecialOffer ? `removeSpecialOffer('${p.__specialOfferDocId}')` : `deleteOffer('${p.__offerDocId}')`}" style="position:absolute; top:6px; left:6px; z-index:5; background:#b33; color:#fff; border:none; border-radius:50%; width:28px; height:28px; font-size:14px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">🗑️</button>` : ''}
+          ${(adminEditMode && (p.__isOffer || p.__isSpecialOffer)) ? `<button onclick="event.stopPropagation(); ${p.__isSpecialOffer ? `removeSpecialOffer('${p.__specialOfferDocId}')` : `deleteOffer('${p.__offerDocId}')`}" style="position:absolute; top:6px; left:6px; z-index:5; background:#b33; color:#fff; border:none; border-radius:50%; width:28px; height:28px; font-size:14px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">🗑️</button>` : ''}
           <div class="offer-img">${imgHtml}</div>
           <div class="offer-body">
             <div class="offer-name">${p.name}</div>

@@ -1,4 +1,4 @@
-const SW_VERSION = 'ayla-pwa-premium-v20-rice-promo';
+const SW_VERSION = 'ayla-pwa-premium-v21-rice-detail';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const DATA_CACHE = `${SW_VERSION}-data`;
 // هذا الكاش ثابت حتى لا تُحذف صور المنتجات عند تحديث الواجهة أو Service Worker.
