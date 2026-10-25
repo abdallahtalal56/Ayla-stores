@@ -6300,10 +6300,19 @@ function goToAdBanner(i){
   document.querySelectorAll('.ad-banner-dot').forEach((el, idx) => el.classList.toggle('active', idx === i));
 }
 
+// عرض اليوم المؤقت: يظهر حتى الساعة 10:00 مساءً بتوقيت الأردن ثم يختفي تلقائياً.
+const TODAY_RICE_PROMO_EXPIRY = new Date('2026-10-25T22:00:00+03:00').getTime();
+const TODAY_RICE_PROMO = {
+  promoTitle: 'عرض اليوم: أرز مصطفى 4 كيلو هندي',
+  promoPrice: '4.75 د.أ فقط',
+  promoSub: 'العرض متاح لغاية الساعة 10 مساءً اليوم'
+};
+
 // اللوحة الذكية بقسم المفرق: بتبني نفسها تلقائياً من بيانات العرض المختار (صورة/اسم/سعر)، أو من فيديو/GIF لو مضاف
 let _retailAdIndex = 0;
 let _retailAdTimer = null;
 let _retailAdSlides = [];
+let _todayRicePromoExpiryTimer = null;
 function renderRetailAdBanner(){
   const viewport = document.getElementById('retailAdViewport');
   const dotsWrap = document.getElementById('retailAdDots');
@@ -6315,11 +6324,24 @@ function renderRetailAdBanner(){
       return { p, videoId: f.videoId || '', videoFileUrl: f.videoFileUrl || '', videoDurationSec: f.videoDurationSec || 0, gifUrl: f.gifUrl || '' };
     })
     .filter(Boolean);
+  if (Date.now() < TODAY_RICE_PROMO_EXPIRY) featured.unshift({ promo: TODAY_RICE_PROMO });
   _retailAdSlides = featured;
+  if (_todayRicePromoExpiryTimer) clearTimeout(_todayRicePromoExpiryTimer);
+  if (Date.now() < TODAY_RICE_PROMO_EXPIRY) {
+    _todayRicePromoExpiryTimer = setTimeout(() => renderRetailAdBanner(), TODAY_RICE_PROMO_EXPIRY - Date.now() + 1000);
+  }
   if (!featured.length){ viewport.innerHTML = ''; dotsWrap.innerHTML = ''; if (_retailAdTimer) clearTimeout(_retailAdTimer); return; }
 
   viewport.innerHTML = featured.map((f, i) => {
     const p = f.p;
+    if (f.promo) return `
+    <div class="retail-ad-slide${i === 0 ? ' active' : ''}" data-idx="${i}">
+      <div class="retail-ad-slide-overlay">
+        <div class="retail-ad-slide-title">${f.promo.promoTitle}</div>
+        <div class="retail-ad-slide-price">${f.promo.promoPrice}</div>
+        <div style="font-size:13px;margin-top:5px;">${f.promo.promoSub}</div>
+      </div>
+    </div>`;
     // لو فيه GIF مرفوع، منفضّله دايماً (يشتغل تلقائي 100% بكل الأجهزة). وإلا فيديو مرفوع، وإلا رابط يوتيوب، وإلا صورة العرض العادية
     const mediaHtml = f.gifUrl
       ? `<img src="${f.gifUrl}">`
