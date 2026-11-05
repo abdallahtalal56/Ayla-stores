@@ -6477,6 +6477,16 @@ function renderFeaturedOffersStrip(){
   `).join('');
 }
 
+const RETAIL_CATEGORY_RAIL_ICONS = {
+  oil_ghee:'🫒', fresh_eggs:'🥚', 'group::rice_sugar_salt':'🌾', 'group::sauces_tomato':'🍅',
+  canned_goods:'🥫', dairy_cheese:'🧀', baking_canned_fruits:'🧁', tahini_jam:'🍯',
+  foodstuffs:'🛒', sweets_snacks:'🍬', tea_coffee:'☕', legumes_spices:'🌶️',
+  personal_care:'🧴', paper_products:'🧻', juices_drinks:'🧃', disposables:'🍽️',
+  detergents:'🧼', pasta:'🍝', instant_noodles:'🍜', sugar:'🍚', salt:'🧂',
+  tomato_paste:'🍅', sauces_condiments:'🫙', frozen_chilled:'🧊', veg_fruits:'🥬',
+  deli:'🥪', mortadella:'🥩', legumes_roastery:'🥜', butcher:'🍖'
+};
+
 // اختصارات المرحلة الأولى: تعتمد على مفاتيح الأقسام الحالية ولا تنشئ أي بيانات جديدة.
 function renderRetailHomeUpgrade(){
   const grid = document.getElementById('retailQuickGrid');
@@ -6501,7 +6511,7 @@ function renderRetailHomeUpgrade(){
     if (!info) return '';
     return `
       <button class="retail-category-chip" type="button" onclick="navigateToCategory('${key}')" aria-label="فتح قسم ${info.name}">
-        <span class="retail-category-chip-icon">${info.emoji || '📦'}</span>
+        <span class="retail-category-chip-icon" aria-hidden="true">${RETAIL_CATEGORY_RAIL_ICONS[key] || info.emoji || '📦'}</span>
         <span>${info.name}</span><span class="retail-category-chip-arrow">←</span>
       </button>`;
   }).join('');
