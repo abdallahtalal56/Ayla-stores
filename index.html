@@ -546,6 +546,17 @@
   .ayla-customer-mark{width:52px;height:52px;margin:0 auto 8px;border-radius:18px;background:linear-gradient(145deg,#f3e5c3,#c9a227);display:flex;align-items:center;justify-content:center;font-size:27px;color:#fff;box-shadow:0 6px 16px #c9a22755;}
   .ayla-customer-card h2{text-align:center;font-size:22px;margin:4px 0 5px;font-weight:900;}.ayla-customer-subtitle{text-align:center;color:#7a6a45;font-size:12px;line-height:1.8;margin:0 4px 15px;}
   .ayla-customer-form{display:grid;gap:10px;}.ayla-customer-form label{display:grid;gap:5px;color:#5d4c2d;font-size:12px;font-weight:800;}.ayla-customer-form input:not([type="checkbox"]),.ayla-customer-form textarea{width:100%;border:1px solid #e4d8bd;border-radius:12px;background:#fff;padding:11px 12px;font:inherit;font-size:13px;color:#3A2F1B;outline:none;}.ayla-customer-form input:focus,.ayla-customer-form textarea:focus{border-color:#c9a227;box-shadow:0 0 0 3px #c9a22722;}.ayla-customer-form textarea{resize:vertical;}.ayla-customer-consent{display:flex!important;grid-template-columns:none!important;align-items:flex-start;grid-template-columns:18px 1fr!important;display:grid!important;gap:7px!important;font-size:11px!important;line-height:1.6;}.ayla-customer-consent input{margin-top:3px;accent-color:#9c7a24;}.ayla-customer-form button{border:0;border-radius:14px;padding:12px;background:linear-gradient(135deg,#c9a227,#9c7a24);color:#fff;font:inherit;font-weight:900;cursor:pointer;box-shadow:0 6px 14px #9c7a2444;}.ayla-customer-form button:disabled{opacity:.6;cursor:wait;}.ayla-customer-error{min-height:18px;color:#b3453a;text-align:center;font-size:11px;font-weight:800;margin:0;}.ayla-customer-card small{display:block;text-align:center;color:#94866c;font-size:10px;line-height:1.7;margin-top:10px;}
+  /* Phase 1: واجهة مفرق حديثة — طبقة عرض فقط، لا تغيّر بيانات الكتالوج أو المزامنة */
+  .retail-home-upgrade{margin:10px 14px 16px;direction:rtl;}
+  .retail-welcome-card{position:relative;overflow:hidden;border-radius:24px;padding:18px 16px;background:linear-gradient(135deg,#173847 0%,#245b63 58%,#c99732 180%);color:#fff;box-shadow:0 14px 30px rgba(23,56,71,.22);}
+  .retail-welcome-card:after{content:'';position:absolute;width:180px;height:180px;border-radius:50%;left:-58px;top:-72px;background:rgba(255,255,255,.08);pointer-events:none;}
+  .retail-welcome-top{position:relative;z-index:1;display:flex;align-items:center;gap:11px;}.retail-welcome-logo{width:49px;height:49px;border-radius:16px;background:#fff;padding:4px;box-shadow:0 8px 18px rgba(0,0,0,.18);object-fit:cover;flex:none;}
+  .retail-welcome-copy{flex:1;min-width:0}.retail-welcome-eyebrow{font-size:11px;color:#dbeadf;margin-bottom:3px}.retail-welcome-title{font-size:21px;font-weight:900;letter-spacing:-.3px}.retail-welcome-sub{font-size:11px;color:#e7f0e9;margin-top:3px;line-height:1.6}
+  .retail-header-actions{display:flex;gap:7px;flex:none}.retail-header-action{width:39px;height:39px;border:1px solid rgba(255,255,255,.26);border-radius:13px;background:rgba(255,255,255,.14);color:#fff;font-size:18px;cursor:pointer;transition:transform .16s ease,background .16s ease}.retail-header-action:active{transform:scale(.95)}.retail-header-action:hover{background:rgba(255,255,255,.24)}
+  .retail-search-shortcut{position:relative;z-index:1;margin-top:16px;display:flex;align-items:center;gap:8px;padding:11px 13px;border-radius:14px;background:#fff;color:#7c7465;font-size:12px;box-shadow:0 7px 17px rgba(0,0,0,.12);cursor:pointer}.retail-search-shortcut b{color:#245b63;font-size:17px;line-height:1}
+  .retail-home-heading{display:flex;justify-content:space-between;align-items:baseline;margin:18px 2px 9px}.retail-home-heading strong{font-size:15px;color:#243d42;font-weight:900}.retail-home-heading span{font-size:10px;color:#9a8b72}
+  .retail-quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.retail-quick-card{min-width:0;border:1px solid #eee5d6;border-radius:17px;padding:10px 5px 9px;text-align:center;background:linear-gradient(180deg,#fff,#fbf8f1);box-shadow:0 5px 13px rgba(78,59,27,.06);cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}.retail-quick-card:active{transform:scale(.96)}.retail-quick-card:hover{box-shadow:0 8px 18px rgba(78,59,27,.12)}.retail-quick-icon{width:40px;height:40px;margin:0 auto 6px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#eef6f2;font-size:22px}.retail-quick-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#42524f;font-size:10.5px;font-weight:800}.retail-home-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.retail-benefit{padding:9px 5px;border-radius:13px;background:#f8f3e8;color:#756749;text-align:center;font-size:9.5px;line-height:1.5}.retail-benefit b{display:block;color:#9c7a24;font-size:15px;margin-bottom:1px}
+  @media(max-width:360px){.retail-quick-grid{gap:5px}.retail-welcome-title{font-size:18px}.retail-header-action{width:35px;height:35px}.retail-home-upgrade{margin-inline:10px}}
 </style>
 </head>
 <body>
@@ -877,6 +888,33 @@
       <div class="retail-ad-viewport" id="retailAdViewport"></div>
       <div class="retail-ad-dots" id="retailAdDots"></div>
     </div>
+
+    <section class="retail-home-upgrade" id="retailHomeUpgrade" style="display:none;" aria-label="واجهة متجر ايلا الجديدة">
+      <div class="retail-welcome-card">
+        <div class="retail-welcome-top">
+          <img class="retail-welcome-logo" src="./icon-192.png" alt="شعار ايلا ستورز">
+          <div class="retail-welcome-copy">
+            <div class="retail-welcome-eyebrow">أهلاً بك في</div>
+            <div class="retail-welcome-title">ايلا ستورز</div>
+            <div class="retail-welcome-sub">كل احتياجات البيت… مرتبة وبأسعار واضحة</div>
+          </div>
+          <div class="retail-header-actions">
+            <button class="retail-header-action" type="button" onclick="showCustomerRegistration()" aria-label="حسابي">♙</button>
+            <button class="retail-header-action" type="button" onclick="toggleCartDrawer(true)" aria-label="السلة">🛒</button>
+          </div>
+        </div>
+        <div class="retail-search-shortcut" onclick="document.getElementById('searchInput').focus(); document.getElementById('searchInput').scrollIntoView({behavior:'smooth',block:'center'});" role="button" tabindex="0">
+          <b>⌕</b><span>ابحث عن منتج، ماركة أو قسم…</span>
+        </div>
+      </div>
+      <div class="retail-home-heading"><strong>تسوّق حسب احتياجك</strong><span>اختصارات سريعة</span></div>
+      <div class="retail-quick-grid" id="retailQuickGrid"></div>
+      <div class="retail-home-benefits">
+        <div class="retail-benefit"><b>✓</b>أسعار واضحة</div>
+        <div class="retail-benefit"><b>⌁</b>توصيل للمملكة</div>
+        <div class="retail-benefit"><b>♡</b>سلة محفوظة</div>
+      </div>
+    </section>
 
     <div id="featuredOffersStrip" class="featured-offers-strip" style="display:none;">
       <div class="featured-offers-header">عروضنا المميزة 🎁</div>
@@ -3306,6 +3344,12 @@ function renderApp(){
       document.getElementById('adBannerSlot').style.display = 'none';
     }
 
+    const retailHomeUpgrade = document.getElementById('retailHomeUpgrade');
+    const showRetailHomeUpgrade = !wholesaleUnlocked && viewLevel === 'categories' && !isBrandView && !isCompanyListView;
+    if (retailHomeUpgrade) {
+      retailHomeUpgrade.style.display = showRetailHomeUpgrade ? 'block' : 'none';
+      if (showRetailHomeUpgrade) renderRetailHomeUpgrade();
+    }
     if(viewLevel === 'items'){
       document.getElementById('viewCategories').style.display = 'none';
       document.getElementById('viewItems').style.display = 'block';
@@ -6425,6 +6469,24 @@ function renderFeaturedOffersStrip(){
       <div class="featured-offer-name">${p.name}</div>
       <div class="featured-offer-price">${p.priceRetail > 0 ? p.priceRetail.toFixed(2) + ' د.أ' : 'السعر لاحقاً'}</div>
     </div>
+  `).join('');
+}
+
+// اختصارات المرحلة الأولى: تعتمد على مفاتيح الأقسام الحالية ولا تنشئ أي بيانات جديدة.
+function renderRetailHomeUpgrade(){
+  const grid = document.getElementById('retailQuickGrid');
+  if (!grid) return;
+  const quick = [
+    { key:'group::rice_sugar_salt', name:'الأرز والسكر', emoji:'🌾' },
+    { key:'oil_ghee', name:'الزيت والسمنة', emoji:'🧈' },
+    { key:'dairy_cheese', name:'الحليب والأجبان', emoji:'🧀' },
+    { key:'sweets_snacks', name:'السكاكر والسناكات', emoji:'🍬' }
+  ];
+  grid.innerHTML = quick.map(item => `
+    <button class="retail-quick-card" type="button" onclick="navigateToCategory('${item.key}')" aria-label="فتح قسم ${item.name}">
+      <span class="retail-quick-icon">${item.emoji}</span>
+      <span class="retail-quick-name">${item.name}</span>
+    </button>
   `).join('');
 }
 
