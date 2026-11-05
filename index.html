@@ -556,6 +556,7 @@
   .retail-search-shortcut{position:relative;z-index:1;margin-top:16px;display:flex;align-items:center;gap:8px;padding:11px 13px;border-radius:14px;background:#fff;color:#7c7465;font-size:12px;box-shadow:0 7px 17px rgba(0,0,0,.12);cursor:pointer}.retail-search-shortcut b{color:#245b63;font-size:17px;line-height:1}
   .retail-home-heading{display:flex;justify-content:space-between;align-items:baseline;margin:18px 2px 9px}.retail-home-heading strong{font-size:15px;color:#243d42;font-weight:900}.retail-home-heading span{font-size:10px;color:#9a8b72}
   .retail-quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.retail-quick-card{min-width:0;border:1px solid #eee5d6;border-radius:17px;padding:10px 5px 9px;text-align:center;background:linear-gradient(180deg,#fff,#fbf8f1);box-shadow:0 5px 13px rgba(78,59,27,.06);cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}.retail-quick-card:active{transform:scale(.96)}.retail-quick-card:hover{box-shadow:0 8px 18px rgba(78,59,27,.12)}.retail-quick-icon{width:40px;height:40px;margin:0 auto 6px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#eef6f2;font-size:22px}.retail-quick-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#42524f;font-size:10.5px;font-weight:800}.retail-home-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.retail-benefit{padding:9px 5px;border-radius:13px;background:#f8f3e8;color:#756749;text-align:center;font-size:9.5px;line-height:1.5}.retail-benefit b{display:block;color:#9c7a24;font-size:15px;margin-bottom:1px}
+  .retail-category-rail-wrap{margin-top:18px}.retail-category-rail-title{display:flex;align-items:center;justify-content:space-between;margin:0 2px 9px;color:#243d42}.retail-category-rail-title strong{font-size:14px;font-weight:900}.retail-category-rail-title span{font-size:10px;color:#9a8b72}.retail-category-rail{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 9px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none}.retail-category-rail::-webkit-scrollbar{display:none}.retail-category-chip{display:flex;align-items:center;gap:7px;flex:0 0 auto;min-height:42px;padding:7px 12px;border:1px solid #e9dfcd;border-radius:15px;background:#fffdf8;color:#4b5a56;box-shadow:0 4px 11px rgba(78,59,27,.06);font:800 11px 'Tajawal',sans-serif;cursor:pointer;scroll-snap-align:start;white-space:nowrap;transition:transform .16s ease,background .16s ease,border-color .16s ease}.retail-category-chip:active{transform:scale(.95)}.retail-category-chip:hover{background:#eef6f2;border-color:#b8d8ca}.retail-category-chip-icon{width:27px;height:27px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#eef6f2;font-size:16px}.retail-category-chip-arrow{font-size:12px;color:#9c7a24;margin-inline-start:1px}
   @media(max-width:360px){.retail-quick-grid{gap:5px}.retail-welcome-title{font-size:18px}.retail-header-action{width:35px;height:35px}.retail-home-upgrade{margin-inline:10px}}
 </style>
 </head>
@@ -913,6 +914,10 @@
         <div class="retail-benefit"><b>✓</b>أسعار واضحة</div>
         <div class="retail-benefit"><b>⌁</b>توصيل للمملكة</div>
         <div class="retail-benefit"><b>♡</b>سلة محفوظة</div>
+      </div>
+      <div class="retail-category-rail-wrap">
+        <div class="retail-category-rail-title"><strong>تصفّح الأقسام</strong><span>اسحب للمزيد ←</span></div>
+        <div class="retail-category-rail" id="retailCategoryRail" aria-label="أقسام المتجر"></div>
       </div>
     </section>
 
@@ -6488,6 +6493,18 @@ function renderRetailHomeUpgrade(){
       <span class="retail-quick-name">${item.name}</span>
     </button>
   `).join('');
+  const rail = document.getElementById('retailCategoryRail');
+  if (!rail) return;
+  const railKeys = [...new Set([...(RETAIL_HOME_ORDER_FULL || []), ...(window.DYNAMIC_CATEGORY_KEYS || [])])];
+  rail.innerHTML = railKeys.map(key => {
+    const info = RETAIL_CATEGORY_GROUPS[key] || CATEGORIES[key];
+    if (!info) return '';
+    return `
+      <button class="retail-category-chip" type="button" onclick="navigateToCategory('${key}')" aria-label="فتح قسم ${info.name}">
+        <span class="retail-category-chip-icon">${info.emoji || '📦'}</span>
+        <span>${info.name}</span><span class="retail-category-chip-arrow">←</span>
+      </button>`;
+  }).join('');
 }
 
 // إدارة اللوحة الذكية من لوحة التحكم: بس اختاري العرض وبتنضاف تلقائياً
