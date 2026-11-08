@@ -4110,6 +4110,15 @@ function renderAdminProductList(){
       <summary style="color:var(--gold); font-weight:800; font-size:14px; cursor:pointer;">🤖 لوحة إعلانات ذكية (قسم المفرق/المستهلك)</summary>
       <div style="margin-top:12px;">
       <div style="color:#ccc; font-size:11px; margin-bottom:8px;">هاي لوحة كبيرة بتحل محل شريط الترحيب فوق شاشة المفرق. اختيار العرض اختياري: لو اخترتي عرض بتتولد الصورة/الاسم/السعر تلقائياً منه، أو ضيفي فيديو/GIF لحاله بدون عرض.</div>
+      <label style="display:block; color:#ffd27a; font-size:12px; margin-bottom:5px;">🧩 نوع قالب الإعلان</label>
+      <select id="adm_retail_ad_template" onchange="updateRetailAdTemplateHint()" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:5px;">
+        ${Object.entries(RETAIL_AD_TEMPLATES).map(([key, t]) => `<option value="${key}">${t.icon} ${t.name}</option>`).join('')}
+      </select>
+      <div id="adm_retail_ad_template_hint" style="color:#ead9b0; font-size:11px; line-height:1.6; margin-bottom:8px;"></div>
+      <label style="display:block; color:#ffd27a; font-size:12px; margin-bottom:5px;">✍️ عنوان مخصص (اختياري)</label>
+      <input id="adm_retail_ad_title" type="text" placeholder="يُستخدم اسم المنتج تلقائياً إذا تُرك فارغاً" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
+      <label style="display:block; color:#ffd27a; font-size:12px; margin-bottom:5px;">💬 رسالة الإعلان (اختياري)</label>
+      <input id="adm_retail_ad_subtitle" type="text" placeholder="مثال: لفترة محدودة — اطلبه الآن" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
       <select id="adm_retail_ad_offer" style="width:100%; padding:9px; border-radius:8px; border:1px solid #444; background:#3A2F1B; color:#fff; font-size:13px; margin-bottom:8px;">
         <option value="">-- بدون عرض (فيديو/GIF لحاله) --</option>
         ${Object.values(window.DYNAMIC_OFFERS || {}).map(o => `<option value="${o.numericId}">${(o.title || '').replace(/"/g,'&quot;')}</option>`).join('')}
@@ -4152,6 +4161,7 @@ function renderAdminProductList(){
   wireImageFileInput('so_image_file', 'so_image', 'so_image_preview');
   wireVideoFileInput('adm_retail_ad_video_file', 'adm_retail_ad_video_file_url', 'adm_retail_ad_video_file_preview');
   wireImageFileInput('adm_retail_ad_gif_file', 'adm_retail_ad_gif', 'adm_retail_ad_gif_preview');
+  updateRetailAdTemplateHint();
   updateAdmNewSubOptions();
   updateAdmEditSubSelectOptions();
   updateAdmNewSubSectionOptions();
@@ -6376,6 +6386,22 @@ const TODAY_RICE_PROMO = {
 const TODAY_RICE_PROMO_SOURCE_ID = '721';
 let _retailPromoProductDetail = null;
 
+const RETAIL_AD_TEMPLATES = {
+  offer_of_day: { icon:'🔥', name:'عرض اليوم', hint:'مناسب لسعر خاص أو عرض محدود المدة.', badge:'عرض اليوم' },
+  discount: { icon:'🏷️', name:'خصم خاص', hint:'يبرز التخفيض أو السعر الخاص للمنتج المختار.', badge:'خصم خاص' },
+  new_product: { icon:'✨', name:'منتج جديد', hint:'يظهر المنتج للمستخدمين مع شارة وصل حديثاً.', badge:'وصل حديثاً' },
+  restock: { icon:'🔔', name:'عاد للتوفر', hint:'ينبّه العملاء أن المنتج أصبح متوفراً من جديد.', badge:'عاد للتوفر' },
+  bundle: { icon:'🛍️', name:'عرض باقة', hint:'للترويج لمنتج مختار ضمن باقة أو مجموعة مشتريات.', badge:'عرض باقة' },
+  local_campaign: { icon:'📍', name:'حملة محلية / توصيل', hint:'مناسب لإعلانات أهالي مادبا والتوصيل والتنبيهات العامة.', badge:'لأهالي مادبا' }
+};
+function updateRetailAdTemplateHint(){
+  const select = document.getElementById('adm_retail_ad_template');
+  const hint = document.getElementById('adm_retail_ad_template_hint');
+  if (!select || !hint) return;
+  const template = RETAIL_AD_TEMPLATES[select.value] || RETAIL_AD_TEMPLATES.offer_of_day;
+  hint.textContent = template.hint;
+}
+
 // اللوحة الذكية بقسم المفرق: بتبني نفسها تلقائياً من بيانات العرض المختار (صورة/اسم/سعر)، أو من فيديو/GIF لو مضاف
 let _retailAdIndex = 0;
 let _retailAdTimer = null;
@@ -6389,7 +6415,8 @@ function renderRetailAdBanner(){
     .map(f => {
       const p = f.offerNumericId ? PRODUCTS_DATA.find(x => x.__isOffer && x.id === f.offerNumericId) : null;
       if (f.offerNumericId && !p) return null; // عرض مرتبط انحذف
-      return { p, videoId: f.videoId || '', videoFileUrl: f.videoFileUrl || '', videoDurationSec: f.videoDurationSec || 0, gifUrl: f.gifUrl || '' };
+      const templateKey = f.adTemplate || 'offer_of_day';
+      return { p, templateKey, template: RETAIL_AD_TEMPLATES[templateKey] || RETAIL_AD_TEMPLATES.offer_of_day, customTitle: f.customTitle || '', customSubtitle: f.customSubtitle || '', videoId: f.videoId || '', videoFileUrl: f.videoFileUrl || '', videoDurationSec: f.videoDurationSec || 0, gifUrl: f.gifUrl || '' };
     })
     .filter(Boolean);
   if (Date.now() < TODAY_RICE_PROMO_EXPIRY) featured.unshift({ promo: TODAY_RICE_PROMO });
@@ -6419,10 +6446,10 @@ function renderRetailAdBanner(){
         : (f.videoId
           ? `<iframe class="ad-video-frame" data-video-id="${f.videoId}" src="https://www.youtube.com/embed/${f.videoId}?autoplay=1&mute=1&loop=1&playlist=${f.videoId}&controls=0&modestbranding=1&playsinline=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&showinfo=0&enablejsapi=1" webkit-playsinline="true" style="position:absolute; inset:0; width:100%; height:100%; border:none; pointer-events:none;" allow="autoplay; encrypted-media; picture-in-picture"></iframe>`
           : (p && productDisplayImage(p) ? `<img src="${productDisplayImage(p)}">` : '')));
-    const overlayHtml = p ? `
+    const overlayHtml = (p || f.customTitle || f.customSubtitle) ? `
       <div class="retail-ad-slide-overlay">
-        <div class="retail-ad-slide-title">${p.name}</div>
-        <div class="retail-ad-slide-price">${p.priceRetail > 0 ? p.priceRetail.toFixed(2) + ' د.أ' : 'السعر لاحقاً'}</div>
+        <div><div style="color:#ffe4a3;font-size:11px;font-weight:800;margin-bottom:3px;">${f.template.icon} ${f.template.badge}</div><div class="retail-ad-slide-title">${f.customTitle || (p ? p.name : f.template.name)}</div>${f.customSubtitle ? `<div style="color:#fff;font-size:11px;margin-top:4px;line-height:1.4;">${f.customSubtitle}</div>` : ''}</div>
+        ${p ? `<div class="retail-ad-slide-price">${p.priceRetail > 0 ? p.priceRetail.toFixed(2) + ' د.أ' : 'السعر لاحقاً'}</div>` : ''}
       </div>` : '';
     const clickAttr = p ? `onclick="openOfferDetail(${p.id})"` : '';
     return `
@@ -6523,6 +6550,9 @@ function renderRetailHomeUpgrade(){
 async function addRetailFeaturedOffer(){
   const select = document.getElementById('adm_retail_ad_offer');
   const offerNumericId = parseInt(select.value, 10) || 0;
+  const adTemplate = document.getElementById('adm_retail_ad_template')?.value || 'offer_of_day';
+  const customTitle = document.getElementById('adm_retail_ad_title')?.value.trim() || '';
+  const customSubtitle = document.getElementById('adm_retail_ad_subtitle')?.value.trim() || '';
   const videoUrl = document.getElementById('adm_retail_ad_video').value.trim();
   const videoId = extractYoutubeId(videoUrl);
   if (videoUrl && !videoId){ alert('رابط اليوتيوب مش واضح، تأكدي إنه رابط فيديو صحيح'); return; }
@@ -6539,6 +6569,9 @@ async function addRetailFeaturedOffer(){
   try {
     await db.collection('retailFeaturedOffers').add({
       offerNumericId: offerNumericId || null,
+      adTemplate,
+      customTitle,
+      customSubtitle,
       videoId: videoId || '',
       videoFileUrl: videoFileUrl || '',
       videoDurationSec: (videoId || videoFileUrl) ? (videoDurationSec || 15) : 0,
@@ -6547,6 +6580,10 @@ async function addRetailFeaturedOffer(){
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     select.value = '';
+    document.getElementById('adm_retail_ad_template').value = 'offer_of_day';
+    document.getElementById('adm_retail_ad_title').value = '';
+    document.getElementById('adm_retail_ad_subtitle').value = '';
+    updateRetailAdTemplateHint();
     document.getElementById('adm_retail_ad_video').value = '';
     document.getElementById('adm_retail_ad_video_duration').value = '';
     document.getElementById('adm_retail_ad_video_file_url').value = '';
@@ -6570,10 +6607,11 @@ function renderRetailFeaturedListBox(){
   box.innerHTML = list.map(f => {
     const p = f.offerNumericId ? PRODUCTS_DATA.find(x => x.__isOffer && x.id === f.offerNumericId) : null;
     const mediaBadge = f.gifUrl ? ' 🌀 GIF' : (f.videoFileUrl ? ' 📹 فيديو مرفوع' : (f.videoId ? ' 🎬 فيديو يوتيوب' : ''));
+    const template = RETAIL_AD_TEMPLATES[f.adTemplate] || RETAIL_AD_TEMPLATES.offer_of_day;
     const label = p ? p.name : (f.offerNumericId ? '(عرض محذوف)' : '(بدون عرض — فيديو/GIF لحاله)');
     return `
     <div style="background:#3A2F1B; border-radius:8px; padding:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-      <div style="color:#fff; font-size:12px; font-weight:700;">${label}${mediaBadge}</div>
+      <div style="color:#fff; font-size:12px; font-weight:700;">${template.icon} ${template.name} — ${label}${mediaBadge}</div>
       <button onclick="removeRetailFeaturedOffer('${f.docId}')" style="background:#b33; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:11px;">🗑️ إزالة</button>
     </div>`;
   }).join('');
