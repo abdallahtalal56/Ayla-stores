@@ -380,6 +380,34 @@
   .featured-offer-img img{ width:100%; height:100%; object-fit:cover; }
   .featured-offer-name{ font-size:11.5px; font-weight:800; color:var(--ink); line-height:1.35; height:30px; overflow:hidden; margin-bottom:4px; }
   .featured-offer-price{ font-size:12px; font-weight:900; color:var(--red); }
+  .retail-brand-strip{ margin-top:18px; padding-bottom:4px; }
+  .retail-brand-strip-head{ display:flex; align-items:center; justify-content:space-between; padding:0 2px 9px; color:var(--ink); }
+  .retail-brand-strip-head strong{ font-size:14px; font-weight:900; }
+  .retail-brand-strip-head button{ border:0; background:none; color:var(--gold); font:800 11px 'Tajawal',sans-serif; cursor:pointer; padding:4px; }
+  .retail-brand-track{ display:flex; gap:9px; overflow-x:auto; padding:2px 2px 8px; scroll-snap-type:x proximity; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .retail-brand-track::-webkit-scrollbar{ display:none; }
+  .retail-brand-chip{ flex:0 0 104px; min-height:126px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:9px 6px; border:1px solid #e9dfcd; border-radius:16px; background:#fffdf8; box-shadow:0 4px 11px rgba(78,59,27,.06); cursor:pointer; scroll-snap-align:start; transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease; }
+  .retail-brand-chip:active{ transform:scale(.95); border-color:var(--gold); box-shadow:0 2px 6px rgba(78,59,27,.1); }
+  .retail-brand-logo{ width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center; overflow:hidden; background:linear-gradient(135deg,#eef6f2,#f5e5b6); color:var(--green-dark); font-size:23px; font-weight:900; border:2px solid #f0dfb0; }
+  .retail-brand-logo img{ width:100%; height:100%; object-fit:cover; }
+  .retail-brand-name{ width:100%; color:var(--ink); font-size:11px; line-height:1.35; font-weight:900; text-align:center; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .retail-brand-count{ color:var(--gray); font-size:9.5px; }
+  .retail-brands-page{ grid-column:1/-1; padding:0 14px 120px; }
+  .retail-brands-page-head{ background:linear-gradient(135deg,#245b63,#3d7b78); border-radius:18px; padding:18px 16px; color:#fff; margin-bottom:13px; box-shadow:0 7px 17px rgba(36,91,99,.16); }
+  .retail-brands-page-head h2{ margin:0 0 4px; font-size:20px; font-weight:900; }
+  .retail-brands-page-head p{ margin:0; font-size:11px; opacity:.88; }
+  .retail-brands-search{ width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:13px; padding:11px 13px; background:#fff; color:var(--ink); font:700 13px 'Tajawal',sans-serif; outline:none; margin-bottom:10px; }
+  .retail-brands-search:focus{ border-color:var(--gold); box-shadow:0 0 0 3px rgba(196,154,58,.12); }
+  .retail-brands-tools{ display:flex; gap:7px; overflow-x:auto; margin-bottom:12px; scrollbar-width:none; }
+  .retail-brands-tools::-webkit-scrollbar{ display:none; }
+  .retail-brands-tools button{ flex:0 0 auto; border:1px solid var(--line); background:#fff; color:var(--gray); border-radius:18px; padding:7px 12px; font:800 11px 'Tajawal',sans-serif; cursor:pointer; }
+  .retail-brands-tools button.active{ background:var(--green); border-color:var(--green); color:#fff; }
+  .retail-brands-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .retail-brand-card{ min-height:150px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; background:#fff; border:1px solid var(--line); border-radius:17px; padding:12px 8px; box-shadow:0 3px 10px rgba(16,25,58,.05); cursor:pointer; transition:transform .16s ease,box-shadow .16s ease; }
+  .retail-brand-card:active{ transform:scale(.97); box-shadow:0 1px 5px rgba(16,25,58,.08); }
+  .retail-brand-card .retail-brand-logo{ width:70px; height:70px; }
+  .retail-brand-card .retail-brand-name{ font-size:12px; }
+  .retail-brand-badge{ color:#9c7a24; background:#fff7df; border-radius:9px; padding:2px 7px; font-size:9px; font-weight:900; }
 
   .offer-list-card{ grid-column: 1 / -1; display:flex; align-items:center; gap:12px; background:#fff; border-radius:14px; padding:10px; border:1px solid var(--line); box-shadow:0 2px 8px rgba(16,25,58,0.04); cursor:pointer; position:relative; }
   .offer-list-img{ width:76px; height:76px; border-radius:10px; overflow:hidden; flex-shrink:0; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:28px; }
@@ -921,6 +949,7 @@
         <div class="retail-category-rail-title"><strong>تصفّح الأقسام</strong><span>اسحب للمزيد ←</span></div>
         <div class="retail-category-rail" id="retailCategoryRail" aria-label="أقسام المتجر"></div>
       </div>
+      <div class="retail-brand-strip" id="retailBrandStrip" aria-label="العلامات التجارية"></div>
     </section>
 
     <div id="featuredOffersStrip" class="featured-offers-strip" style="display:none;">
@@ -3277,6 +3306,8 @@ function renderApp(){
     const ROAA_BRAND_NAME = "رؤى لصناعة الشيبس";
     const SHAMS_BRAND_NAME = "شركة شمس التمام لصناعة وتجارة المواد الغذائية";
     const COFFEE93_BRAND_NAME = "قهوة 93 | Coffee 93";
+    const isRetailBrandsPage = viewLevel === 'items' && activeCat === '__retail_brands__';
+    const isRetailBrandView = viewLevel === 'items' && typeof activeCat === 'string' && activeCat.startsWith('retailbrand::');
     const isBrandView = viewLevel === 'items' && !searchQuery && typeof activeCat === 'string' && activeCat.startsWith('brand::');
     const _brandKeyPart = isBrandView ? activeCat.slice(7).split('::')[0] : null;
     const isCompanyMainView = isBrandView && !activeCat.slice(7).split('::')[1] &&
@@ -3361,7 +3392,9 @@ function renderApp(){
       document.getElementById('viewCategories').style.display = 'none';
       document.getElementById('viewItems').style.display = 'block';
       document.getElementById('searchRow').style.display = 'block';
-      renderItemsView();
+      if (isRetailBrandsPage) renderRetailBrandsPage();
+      else if (isRetailBrandView) renderRetailBrandProductsView();
+      else renderItemsView();
     } else {
       document.getElementById('viewCategories').style.display = 'grid';
       document.getElementById('viewItems').style.display = 'none';
@@ -3397,6 +3430,17 @@ function renderApp(){
 
 function handleBackButton(){
   if(viewLevel === 'items'){
+    if (activeCat === '__retail_brands__'){
+      activeCat = null; viewLevel = 'categories'; searchQuery = '';
+      document.getElementById('searchInput').value = '';
+      pushNavState(); renderApp();
+      return;
+    }
+    if (typeof activeCat === 'string' && activeCat.startsWith('retailbrand::')){
+      activeCat = '__retail_brands__'; viewLevel = 'items'; searchQuery = '';
+      pushNavState(); renderApp();
+      return;
+    }
     const isBrandCat = typeof activeCat === 'string' && activeCat.startsWith('brand::');
     const brandParts = isBrandCat ? activeCat.slice(7).split('::') : [];
     if (isBrandCat && brandParts[1] && !searchQuery){
@@ -6568,6 +6612,91 @@ function renderRetailHomeUpgrade(){
         <span>${info.name}</span><span class="retail-category-chip-arrow">←</span>
       </button>`;
   }).join('');
+  renderRetailBrandStrip();
+}
+
+function getRetailBrandCatalog(){
+  const brands = {};
+  const offerBrands = new Set(PRODUCTS_DATA.filter(p => p.__isOffer || p.__isSpecialOffer).map(p => getBrand(p.name)));
+  PRODUCTS_DATA.forEach(p => {
+    if (p.pendingApproval || p.__isOffer || p.__isSpecialOffer || RETAIL_HIDDEN_IDS.includes(p.id)) return;
+    const name = getBrand(p.name);
+    if (!name || name === 'أصناف أخرى') return;
+    if (!brands[name]) brands[name] = { name, count:0, available:0, image:'', hasOffer:false };
+    brands[name].count++;
+    if (!p.outOfStock) brands[name].available++;
+    if (!brands[name].image && p.image) brands[name].image = p.image;
+  });
+  Object.values(brands).forEach(b => { b.hasOffer = offerBrands.has(b.name); });
+  return Object.values(brands).sort((a,b) => b.count - a.count || a.name.localeCompare(b.name, 'ar'));
+}
+function retailBrandLogoHtml(brand, large=false){
+  const initial = (brand.name || '؟').trim().charAt(0);
+  return `<div class="retail-brand-logo${large ? ' retail-brand-logo-large' : ''}">${brand.image ? `<img src="${brand.image}" alt="${brand.name}">` : initial}</div>`;
+}
+function renderRetailBrandStrip(){
+  const wrap = document.getElementById('retailBrandStrip');
+  if (!wrap) return;
+  const brands = getRetailBrandCatalog().slice(0, 12);
+  if (!brands.length){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<div class="retail-brand-strip-head"><strong>تسوّق حسب العلامة التجارية</strong><button type="button" onclick="openRetailBrands()">كل العلامات ←</button></div><div class="retail-brand-track">${brands.map(b => `<button class="retail-brand-chip" type="button" onclick="openRetailBrand('${encodeURIComponent(b.name)}')" aria-label="فتح منتجات ${b.name}">${retailBrandLogoHtml(b)}<span class="retail-brand-name">${b.name}</span><span class="retail-brand-count">${b.count} صنف</span></button>`).join('')}</div>`;
+}
+let _retailBrandQuery = '';
+let _retailBrandFilter = 'all';
+let _retailBrandSort = 'popular';
+function openRetailBrands(){
+  _retailBrandQuery = ''; _retailBrandFilter = 'all'; _retailBrandSort = 'popular';
+  activeCat = '__retail_brands__'; viewLevel = 'items'; searchQuery = ''; activeOfferId = null;
+  pushNavState(); renderApp();
+}
+function openRetailBrand(encodedName){
+  const name = decodeURIComponent(encodedName || '');
+  if (!name) return;
+  activeCat = 'retailbrand::' + encodeURIComponent(name); viewLevel = 'items'; searchQuery = ''; activeOfferId = null;
+  pushNavState(); renderApp();
+}
+function renderRetailBrandCards(){
+  const grid = document.getElementById('retailBrandsGrid');
+  const count = document.getElementById('retailBrandsResultCount');
+  if (!grid) return;
+  let brands = getRetailBrandCatalog();
+  const q = normalizeArabicSearch(_retailBrandQuery || '');
+  if (q) brands = brands.filter(b => normalizeArabicSearch(b.name).includes(q));
+  if (_retailBrandFilter === 'available') brands = brands.filter(b => b.available > 0);
+  if (_retailBrandFilter === 'offers') brands = brands.filter(b => b.hasOffer);
+  if (_retailBrandSort === 'alpha') brands.sort((a,b) => a.name.localeCompare(b.name, 'ar'));
+  else if (_retailBrandSort === 'count') brands.sort((a,b) => b.count - a.count);
+  else brands.sort((a,b) => b.count - a.count || a.name.localeCompare(b.name, 'ar'));
+  if (count) count.textContent = `${brands.length} علامة`;
+  grid.innerHTML = brands.length ? brands.map(b => `<button class="retail-brand-card" type="button" onclick="openRetailBrand('${encodeURIComponent(b.name)}')">${retailBrandLogoHtml(b, true)}<span class="retail-brand-name">${b.name}</span><span class="retail-brand-count">${b.count} صنف · ${b.available} متوفر</span>${b.hasOffer ? '<span class="retail-brand-badge">عروض متوفرة</span>' : ''}</button>`).join('') : '<div class="empty-msg" style="grid-column:1/-1;">لم نجد علامة بهذا الاسم. جرّب بحثًا مختلفًا.</div>';
+}
+function renderRetailBrandsPage(){
+  const target = document.getElementById('itemsGridContainer');
+  const subBar = document.getElementById('subcatBar');
+  const ageNotice = document.getElementById('ageRestrictedNotice');
+  if (subBar) subBar.style.display = 'none';
+  if (ageNotice) ageNotice.style.display = 'none';
+  const brands = getRetailBrandCatalog();
+  document.getElementById('activeCatTitle').textContent = 'العلامات التجارية';
+  document.getElementById('activeCatCount').textContent = `${brands.length} علامة`;
+  document.getElementById('activeCatCount').classList.remove('section-count-clickable');
+  document.getElementById('activeCatCount').onclick = null;
+  target.innerHTML = `<div class="retail-brands-page"><div class="retail-brands-page-head"><h2>تسوّق حسب العلامة التجارية</h2><p>اكتشف منتجاتك المفضلة من العلامات الموجودة فعليًا في متجر أيلا.</p></div><input class="retail-brands-search" id="retailBrandsSearch" type="search" placeholder="🔍 ابحث عن علامة تجارية" value="${_retailBrandQuery.replace(/"/g,'&quot;')}"><div class="retail-brands-tools"><button class="${_retailBrandFilter==='all'?'active':''}" onclick="setRetailBrandFilter('all')">الكل</button><button class="${_retailBrandFilter==='available'?'active':''}" onclick="setRetailBrandFilter('available')">متوفرة</button><button class="${_retailBrandFilter==='offers'?'active':''}" onclick="setRetailBrandFilter('offers')">عليها عروض</button><select onchange="setRetailBrandSort(this.value)" style="margin-inline-start:auto;border:1px solid var(--line);border-radius:18px;padding:6px 8px;background:#fff;color:var(--gray);font:800 11px 'Tajawal',sans-serif;"><option value="popular" ${_retailBrandSort==='popular'?'selected':''}>الأكثر شعبية</option><option value="alpha" ${_retailBrandSort==='alpha'?'selected':''}>أبجديًا</option><option value="count" ${_retailBrandSort==='count'?'selected':''}>عدد المنتجات</option></select></div><div style="font-size:11px;color:var(--gray);margin-bottom:8px;" id="retailBrandsResultCount"></div><div class="retail-brands-grid" id="retailBrandsGrid"></div></div>`;
+  const input = document.getElementById('retailBrandsSearch');
+  if (input) input.addEventListener('input', e => { _retailBrandQuery = e.target.value; renderRetailBrandCards(); });
+  renderRetailBrandCards();
+}
+function setRetailBrandFilter(filter){ _retailBrandFilter = filter; renderRetailBrandsPage(); }
+function setRetailBrandSort(sort){ _retailBrandSort = sort; renderRetailBrandsPage(); }
+function renderRetailBrandProductsView(){
+  const encodedName = activeCat.slice('retailbrand::'.length);
+  const brandName = decodeURIComponent(encodedName || '');
+  if (!brandName) { openRetailBrands(); return; }
+  const originalCat = activeCat;
+  activeCat = 'brand::' + brandName;
+  renderItemsView();
+  activeCat = originalCat;
+  document.getElementById('activeCatTitle').textContent = brandName;
 }
 
 // إدارة اللوحة الذكية من لوحة التحكم: بس اختاري العرض وبتنضاف تلقائياً
