@@ -6394,6 +6394,28 @@ const RETAIL_AD_TEMPLATES = {
   bundle: { icon:'🛍️', name:'عرض باقة', hint:'للترويج لمنتج مختار ضمن باقة أو مجموعة مشتريات.', badge:'عرض باقة' },
   local_campaign: { icon:'📍', name:'حملة محلية / توصيل', hint:'مناسب لإعلانات أهالي مادبا والتوصيل والتنبيهات العامة.', badge:'لأهالي مادبا' }
 };
+const RETAIL_AD_IMPRESSION_TTL = 30 * 60 * 1000;
+function trackRetailAdEvent(docId, eventType){
+  if (!docId || !db || !firebase?.firestore?.FieldValue) return;
+  const now = Date.now();
+  const storageKey = `ayla-retail-ad-${eventType}-${docId}`;
+  if (eventType === 'impression'){
+    try {
+      const lastSeen = Number(localStorage.getItem(storageKey) || 0);
+      if (lastSeen && now - lastSeen < RETAIL_AD_IMPRESSION_TTL) return;
+      localStorage.setItem(storageKey, String(now));
+    } catch(e) { /* التخزين المحلي اختياري ولا يمنع تسجيل الحدث */ }
+  }
+  const field = eventType === 'click' ? 'clicks' : 'impressions';
+  db.collection('retailFeaturedOffers').doc(docId).update({
+    [field]: firebase.firestore.FieldValue.increment(1),
+    lastEventAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(() => {});
+}
+function trackRetailAdClick(docId, productId){
+  trackRetailAdEvent(docId, 'click');
+  if (productId) openOfferDetail(productId);
+}
 function updateRetailAdTemplateHint(){
   const select = document.getElementById('adm_retail_ad_template');
   const hint = document.getElementById('adm_retail_ad_template_hint');
@@ -6416,7 +6438,7 @@ function renderRetailAdBanner(){
       const p = f.offerNumericId ? PRODUCTS_DATA.find(x => x.__isOffer && x.id === f.offerNumericId) : null;
       if (f.offerNumericId && !p) return null; // عرض مرتبط انحذف
       const templateKey = f.adTemplate || 'offer_of_day';
-      return { p, templateKey, template: RETAIL_AD_TEMPLATES[templateKey] || RETAIL_AD_TEMPLATES.offer_of_day, customTitle: f.customTitle || '', customSubtitle: f.customSubtitle || '', videoId: f.videoId || '', videoFileUrl: f.videoFileUrl || '', videoDurationSec: f.videoDurationSec || 0, gifUrl: f.gifUrl || '' };
+      return { docId: f.docId || '', p, templateKey, template: RETAIL_AD_TEMPLATES[templateKey] || RETAIL_AD_TEMPLATES.offer_of_day, customTitle: f.customTitle || '', customSubtitle: f.customSubtitle || '', impressions: Number(f.impressions || 0), clicks: Number(f.clicks || 0), videoId: f.videoId || '', videoFileUrl: f.videoFileUrl || '', videoDurationSec: f.videoDurationSec || 0, gifUrl: f.gifUrl || '' };
     })
     .filter(Boolean);
   if (Date.now() < TODAY_RICE_PROMO_EXPIRY) featured.unshift({ promo: TODAY_RICE_PROMO });
@@ -6451,7 +6473,7 @@ function renderRetailAdBanner(){
         <div><div style="color:#ffe4a3;font-size:11px;font-weight:800;margin-bottom:3px;">${f.template.icon} ${f.template.badge}</div><div class="retail-ad-slide-title">${f.customTitle || (p ? p.name : f.template.name)}</div>${f.customSubtitle ? `<div style="color:#fff;font-size:11px;margin-top:4px;line-height:1.4;">${f.customSubtitle}</div>` : ''}</div>
         ${p ? `<div class="retail-ad-slide-price">${p.priceRetail > 0 ? p.priceRetail.toFixed(2) + ' د.أ' : 'السعر لاحقاً'}</div>` : ''}
       </div>` : '';
-    const clickAttr = p ? `onclick="openOfferDetail(${p.id})"` : '';
+    const clickAttr = f.docId ? `onclick="trackRetailAdClick('${f.docId}', ${p ? p.id : 'null'})"` : '';
     return `
     <div class="retail-ad-slide${i === 0 ? ' active' : ''}" data-idx="${i}" ${clickAttr}>
       ${mediaHtml}
@@ -6465,6 +6487,7 @@ function renderRetailAdBanner(){
   `).join('') : '';
 
   _retailAdIndex = 0;
+  if (_retailAdSlides[0]?.docId) trackRetailAdEvent(_retailAdSlides[0].docId, 'impression');
   scheduleNextRetailAdSlide();
   unlockVideoAutoplayOnFirstTouch();
 }
@@ -6485,6 +6508,7 @@ function goToRetailAdBanner(i){
   _retailAdIndex = i;
   document.querySelectorAll('.retail-ad-slide').forEach(el => el.classList.toggle('active', Number(el.dataset.idx) === i));
   document.querySelectorAll('.retail-ad-dot').forEach((el, idx) => el.classList.toggle('active', idx === i));
+  if (_retailAdSlides[i]?.docId) trackRetailAdEvent(_retailAdSlides[i].docId, 'impression');
   scheduleNextRetailAdSlide();
 }
 
@@ -6604,14 +6628,21 @@ function renderRetailFeaturedListBox(){
     box.innerHTML = `<div style="color:#999; font-size:12px; text-align:center;">ما فيه عروض مضافة باللوحة لسا</div>`;
     return;
   }
-  box.innerHTML = list.map(f => {
+  const totalImpressions = list.reduce((sum, f) => sum + Number(f.impressions || 0), 0);
+  const totalClicks = list.reduce((sum, f) => sum + Number(f.clicks || 0), 0);
+  const totalCtr = totalImpressions ? ((totalClicks / totalImpressions) * 100).toFixed(1) : '0.0';
+  const summary = `<div style="background:#f5e5b6;color:#3A2F1B;border-radius:8px;padding:9px 10px;margin-bottom:9px;font-size:12px;line-height:1.8;">📊 <b>إجمالي الأداء:</b> ${totalImpressions} مشاهدة · ${totalClicks} نقرة · تفاعل ${totalCtr}%</div>`;
+  box.innerHTML = summary + list.map(f => {
     const p = f.offerNumericId ? PRODUCTS_DATA.find(x => x.__isOffer && x.id === f.offerNumericId) : null;
     const mediaBadge = f.gifUrl ? ' 🌀 GIF' : (f.videoFileUrl ? ' 📹 فيديو مرفوع' : (f.videoId ? ' 🎬 فيديو يوتيوب' : ''));
     const template = RETAIL_AD_TEMPLATES[f.adTemplate] || RETAIL_AD_TEMPLATES.offer_of_day;
     const label = p ? p.name : (f.offerNumericId ? '(عرض محذوف)' : '(بدون عرض — فيديو/GIF لحاله)');
+    const impressions = Number(f.impressions || 0);
+    const clicks = Number(f.clicks || 0);
+    const ctr = impressions ? ((clicks / impressions) * 100).toFixed(1) : '0.0';
     return `
     <div style="background:#3A2F1B; border-radius:8px; padding:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-      <div style="color:#fff; font-size:12px; font-weight:700;">${template.icon} ${template.name} — ${label}${mediaBadge}</div>
+      <div style="color:#fff; font-size:12px; font-weight:700; flex:1; min-width:0;">${template.icon} ${template.name} — ${label}${mediaBadge}<div style="color:#f5e5b6;font-size:11px;font-weight:500;margin-top:4px;">👁️ ${impressions} مشاهدة · 🖱️ ${clicks} نقرة · تفاعل ${ctr}%</div></div>
       <button onclick="removeRetailFeaturedOffer('${f.docId}')" style="background:#b33; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:11px;">🗑️ إزالة</button>
     </div>`;
   }).join('');
