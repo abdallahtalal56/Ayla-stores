@@ -383,11 +383,13 @@
   .retail-brand-strip{ margin-top:18px; padding-bottom:4px; }
   .retail-brand-strip-head{ display:flex; align-items:center; justify-content:space-between; padding:0 2px 9px; color:var(--ink); }
   .retail-brand-strip-head strong{ font-size:14px; font-weight:900; }
-  .retail-brand-strip-head button{ border:0; background:none; color:var(--gold); font:800 11px 'Tajawal',sans-serif; cursor:pointer; padding:4px; }
-  .retail-brand-track{ display:flex; gap:9px; overflow-x:auto; padding:2px 2px 8px; scroll-snap-type:x proximity; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .retail-brand-track{ display:flex; gap:9px; overflow:hidden; padding:2px 2px 8px; direction:ltr; }
   .retail-brand-track::-webkit-scrollbar{ display:none; }
-  .retail-brand-chip{ flex:0 0 104px; min-height:126px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:9px 6px; border:1px solid #e9dfcd; border-radius:16px; background:#fffdf8; box-shadow:0 4px 11px rgba(78,59,27,.06); cursor:pointer; scroll-snap-align:start; transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease; }
-  .retail-brand-chip:active{ transform:scale(.95); border-color:var(--gold); box-shadow:0 2px 6px rgba(78,59,27,.1); }
+  .retail-brand-track.is-marquee{ width:max-content; animation:retailBrandMarquee 70s linear infinite; }
+  .retail-brand-track:hover,.retail-brand-track:focus-within{ animation-play-state:paused; }
+  .retail-brand-chip{ flex:0 0 104px; min-height:126px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:9px 6px; border:1px solid #e9dfcd; border-radius:16px; background:#fffdf8; box-shadow:0 4px 11px rgba(78,59,27,.06); user-select:none; }
+  @keyframes retailBrandMarquee{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce){ .retail-brand-track.is-marquee{ animation:none; overflow-x:auto; width:100%; } }
   .retail-brand-logo{ width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center; overflow:hidden; background:linear-gradient(135deg,#eef6f2,#f5e5b6); color:var(--green-dark); font-size:23px; font-weight:900; border:2px solid #f0dfb0; }
   .retail-brand-logo img{ width:100%; height:100%; object-fit:cover; }
   .retail-brand-name{ width:100%; color:var(--ink); font-size:11px; line-height:1.35; font-weight:900; text-align:center; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
@@ -6650,9 +6652,10 @@ function retailBrandLogoHtml(brand, large=false){
 function renderRetailBrandStrip(){
   const wrap = document.getElementById('retailBrandStrip');
   if (!wrap) return;
-  const brands = getRetailBrandCatalog().slice(0, 12);
+  const brands = getRetailBrandCatalog();
   if (!brands.length){ wrap.innerHTML = ''; return; }
-  wrap.innerHTML = `<div class="retail-brand-strip-head"><strong>تسوّق حسب العلامة التجارية</strong><button type="button" onclick="openRetailBrands()">كل العلامات ←</button></div><div class="retail-brand-track">${brands.map(b => `<button class="retail-brand-chip" type="button" onclick="openRetailBrand('${encodeURIComponent(b.name)}')" aria-label="فتح منتجات ${b.name}">${retailBrandLogoHtml(b)}<span class="retail-brand-name">${b.name}</span><span class="retail-brand-count">${b.count} صنف</span></button>`).join('')}</div>`;
+  const cards = brands.map(b => `<div class="retail-brand-chip" aria-label="العلامة التجارية ${b.name}">${retailBrandLogoHtml(b)}<span class="retail-brand-name">${b.name}</span><span class="retail-brand-count">${b.count} صنف</span></div>`).join('');
+  wrap.innerHTML = `<div class="retail-brand-strip-head"><strong>علاماتنا التجارية</strong><span class="retail-brand-count">${brands.length} علامة</span></div><div class="retail-brand-track is-marquee" aria-label="عرض شعارات جميع العلامات التجارية">${cards}${cards}</div>`;
 }
 let _retailBrandQuery = '';
 let _retailBrandFilter = 'all';
