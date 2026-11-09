@@ -380,16 +380,16 @@
   .featured-offer-img img{ width:100%; height:100%; object-fit:cover; }
   .featured-offer-name{ font-size:11.5px; font-weight:800; color:var(--ink); line-height:1.35; height:30px; overflow:hidden; margin-bottom:4px; }
   .featured-offer-price{ font-size:12px; font-weight:900; color:var(--red); }
-  .retail-brand-strip{ margin-top:18px; padding-bottom:4px; }
+  .retail-brand-strip{ margin-top:18px; padding-bottom:4px; min-width:0; max-width:100%; overflow:hidden; }
   .retail-brand-strip-head{ display:flex; align-items:center; justify-content:space-between; padding:0 2px 9px; color:var(--ink); }
   .retail-brand-strip-head strong{ font-size:14px; font-weight:900; }
-  .retail-brand-track{ display:flex; gap:9px; overflow:hidden; padding:2px 2px 8px; direction:ltr; }
+  .retail-brand-track{ width:100%; max-width:100%; min-width:0; overflow:hidden; padding:2px 2px 8px; direction:ltr; }
   .retail-brand-track::-webkit-scrollbar{ display:none; }
-  .retail-brand-track.is-marquee{ width:max-content; animation:retailBrandMarquee 70s linear infinite; }
-  .retail-brand-track:hover,.retail-brand-track:focus-within{ animation-play-state:paused; }
+  .retail-brand-marquee{ display:flex; gap:9px; width:max-content; animation:retailBrandMarquee 70s linear infinite; }
+  .retail-brand-track:hover .retail-brand-marquee{ animation-play-state:paused; }
   .retail-brand-chip{ flex:0 0 104px; min-height:126px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:9px 6px; border:1px solid #e9dfcd; border-radius:16px; background:#fffdf8; box-shadow:0 4px 11px rgba(78,59,27,.06); user-select:none; }
   @keyframes retailBrandMarquee{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
-  @media (prefers-reduced-motion: reduce){ .retail-brand-track.is-marquee{ animation:none; overflow-x:auto; width:100%; } }
+  @media (prefers-reduced-motion: reduce){ .retail-brand-marquee{ animation:none; width:100%; overflow-x:auto; } }
   .retail-brand-logo{ width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center; overflow:hidden; background:linear-gradient(135deg,#eef6f2,#f5e5b6); color:var(--green-dark); font-size:23px; font-weight:900; border:2px solid #f0dfb0; }
   .retail-brand-logo img{ width:100%; height:100%; object-fit:cover; }
   .retail-brand-name{ width:100%; color:var(--ink); font-size:11px; line-height:1.35; font-weight:900; text-align:center; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
@@ -6655,7 +6655,7 @@ function renderRetailBrandStrip(){
   const brands = getRetailBrandCatalog();
   if (!brands.length){ wrap.innerHTML = ''; return; }
   const cards = brands.map(b => `<div class="retail-brand-chip" aria-label="العلامة التجارية ${b.name}">${retailBrandLogoHtml(b)}<span class="retail-brand-name">${b.name}</span><span class="retail-brand-count">${b.count} صنف</span></div>`).join('');
-  wrap.innerHTML = `<div class="retail-brand-strip-head"><strong>علاماتنا التجارية</strong><span class="retail-brand-count">${brands.length} علامة</span></div><div class="retail-brand-track is-marquee" aria-label="عرض شعارات جميع العلامات التجارية">${cards}${cards}</div>`;
+  wrap.innerHTML = `<div class="retail-brand-strip-head"><strong>علاماتنا التجارية</strong><span class="retail-brand-count">${brands.length} علامة</span></div><div class="retail-brand-track" aria-label="عرض شعارات جميع العلامات التجارية"><div class="retail-brand-marquee">${cards}${cards}</div></div>`;
 }
 let _retailBrandQuery = '';
 let _retailBrandFilter = 'all';
