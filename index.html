@@ -6622,13 +6622,26 @@ function getRetailBrandCatalog(){
     if (p.pendingApproval || p.__isOffer || p.__isSpecialOffer || RETAIL_HIDDEN_IDS.includes(p.id)) return;
     const name = getBrand(p.name);
     if (!name || name === 'أصناف أخرى') return;
-    if (!brands[name]) brands[name] = { name, count:0, available:0, image:'', hasOffer:false };
+    if (!brands[name]) brands[name] = { name, count:0, available:0, image:getOfficialRetailBrandLogo(name), hasOffer:false };
     brands[name].count++;
     if (!p.outOfStock) brands[name].available++;
     if (!brands[name].image && p.image) brands[name].image = p.image;
   });
   Object.values(brands).forEach(b => { b.hasOffer = offerBrands.has(b.name); });
   return Object.values(brands).sort((a,b) => b.count - a.count || a.name.localeCompare(b.name, 'ar'));
+}
+const RETAIL_BRAND_LOGO_CACHE = Object.create(null);
+function getOfficialRetailBrandLogo(name){
+  const dynamicCompany = window.DYNAMIC_COMPANIES && window.DYNAMIC_COMPANIES[name];
+  if (dynamicCompany && dynamicCompany.logo) return dynamicCompany.logo;
+  if (Object.prototype.hasOwnProperty.call(RETAIL_BRAND_LOGO_CACHE, name)) return RETAIL_BRAND_LOGO_CACHE[name];
+  let logo = '';
+  if (typeof getWholesaleBrandCats === 'function'){
+    const knownCompany = getWholesaleBrandCats().find(c => c.key === 'brand::' + name);
+    if (knownCompany && knownCompany.image) logo = knownCompany.image;
+  }
+  RETAIL_BRAND_LOGO_CACHE[name] = logo;
+  return logo;
 }
 function retailBrandLogoHtml(brand, large=false){
   const initial = (brand.name || '؟').trim().charAt(0);
