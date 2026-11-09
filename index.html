@@ -385,7 +385,7 @@
   .retail-brand-strip-head strong{ font-size:14px; font-weight:900; }
   .retail-brand-track{ width:100%; max-width:100%; min-width:0; overflow:hidden; padding:2px 2px 8px; direction:ltr; }
   .retail-brand-track::-webkit-scrollbar{ display:none; }
-  .retail-brand-marquee{ display:flex; gap:9px; width:max-content; animation:retailBrandMarquee 70s linear infinite; }
+  .retail-brand-marquee{ display:flex; gap:9px; width:max-content; animation:retailBrandMarquee 120s linear infinite; }
   .retail-brand-track:hover .retail-brand-marquee{ animation-play-state:paused; }
   .retail-brand-chip{ flex:0 0 104px; min-height:126px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:9px 6px; border:1px solid #e9dfcd; border-radius:16px; background:#fffdf8; box-shadow:0 4px 11px rgba(78,59,27,.06); user-select:none; }
   @keyframes retailBrandMarquee{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
@@ -6654,7 +6654,7 @@ function renderRetailBrandStrip(){
   if (!wrap) return;
   const brands = getRetailBrandCatalog();
   if (!brands.length){ wrap.innerHTML = ''; return; }
-  const cards = brands.map(b => `<div class="retail-brand-chip" aria-label="العلامة التجارية ${b.name}">${retailBrandLogoHtml(b)}<span class="retail-brand-name">${b.name}</span><span class="retail-brand-count">${b.count} صنف</span></div>`).join('');
+  const cards = brands.map(b => `<div class="retail-brand-chip" aria-label="العلامة التجارية ${b.name}">${retailBrandLogoHtml(b)}<span class="retail-brand-name">${b.name}</span></div>`).join('');
   wrap.innerHTML = `<div class="retail-brand-strip-head"><strong>علاماتنا التجارية</strong><span class="retail-brand-count">${brands.length} علامة</span></div><div class="retail-brand-track" aria-label="عرض شعارات جميع العلامات التجارية"><div class="retail-brand-marquee">${cards}${cards}</div></div>`;
 }
 let _retailBrandQuery = '';
