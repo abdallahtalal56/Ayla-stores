@@ -442,6 +442,15 @@
   .retail-bottom-nav .retail-bottom-icon{ display:block; height:23px; margin-bottom:2px; font-size:21px; line-height:23px; }
   .retail-bottom-nav .retail-bottom-label{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .retail-bottom-cart-badge{ position:absolute; top:1px; right:calc(50% - 22px); min-width:16px; height:16px; padding:0 4px; border-radius:10px; background:var(--red); color:#fff; font-size:9px; font-weight:900; line-height:16px; }
+  .catalog-tools{ display:flex; gap:7px; padding:0 14px 12px; overflow-x:auto; scrollbar-width:none; direction:rtl; }
+  .catalog-tools::-webkit-scrollbar{ display:none; }
+  .catalog-tools button{ flex:0 0 auto; border:1px solid var(--line); border-radius:18px; background:#fff; color:var(--gray); padding:7px 11px; font:800 11px 'Tajawal',sans-serif; cursor:pointer; transition:transform .16s ease,background .16s ease,color .16s ease,border-color .16s ease; }
+  .catalog-tools button:active{ transform:scale(.96); }
+  .catalog-tools button.active{ background:var(--green); border-color:var(--green); color:#fff; }
+  .catalog-tools button.favorites-active{ background:#fff0ed; border-color:#d77c6d; color:#a13d31; }
+  .card-favorite-btn{ position:absolute; top:7px; left:7px; z-index:7; width:30px; height:30px; border:1px solid rgba(201,162,39,.22); border-radius:50%; background:rgba(255,255,255,.94); color:#a58a4a; font-size:18px; line-height:1; cursor:pointer; box-shadow:0 2px 8px rgba(16,25,58,.1); }
+  .card-favorite-btn.is-favorite{ color:#d64d43; background:#fff1ee; border-color:#efb2aa; }
+  .catalog-empty-state{ grid-column:1/-1; text-align:center; padding:32px 18px; border:1px dashed var(--line); border-radius:18px; background:#fffdf7; color:var(--gray); font-size:13px; line-height:1.8; }
   #screenStore{ padding-bottom:calc(78px + env(safe-area-inset-bottom,0px)); }
   @media (prefers-reduced-motion: reduce){ .retail-bottom-nav button{ transition:none; } }
   /* DIALOGS OVERLAY */
@@ -998,13 +1007,18 @@
 
     <div id="viewCategories" class="main-cat-grid"></div>
 
-    <div id="viewItems" style="display:none;">
+  <div id="viewItems" style="display:none;">
       <div class="section-title">
         <span id="activeCatTitle">اسم القسم الحالي</span>
         <span class="section-count" id="activeCatCount">0 صنف</span>
       </div>
       <div id="ageRestrictedNotice" style="display:none; margin:0 14px 12px; background:#FCEBE8; border:1px solid #E0A99E; border-radius:10px; padding:9px 12px; font-size:11.5px; color:#8A2A20; font-weight:700; text-align:center;">🔞 يُحظر بيع هذه المنتجات لمن هم دون 18 عاماً</div>
       <div id="subcatBar" style="display:none; gap:8px; padding:0 14px 12px; overflow-x:auto; -webkit-overflow-scrolling:touch;"></div>
+      <div id="catalogTools" class="catalog-tools" style="display:none;">
+        <button type="button" id="catalogAvailabilityBtn" onclick="toggleCatalogAvailability()">✓ المتوفر أولاً</button>
+        <button type="button" id="catalogSortBtn" onclick="cycleCatalogSort()">ترتيب: الموصى به</button>
+        <button type="button" id="catalogFavoritesBtn" onclick="toggleFavoritesOnly()">♡ المفضلة</button>
+      </div>
       <div class="items-grid" id="itemsGridContainer"></div>
     </div>
   </div>
@@ -2097,6 +2111,44 @@ const BAKING_SUBCATS = [
   { key: "beetroot",  name: "شمندر" }
 ];
 let activeSub = "all";
+let catalogSortMode = 'recommended';
+let catalogAvailabilityOnly = false;
+let catalogFavoritesOnly = false;
+const AYLA_FAVORITES_KEY = 'ayla_store_favorites_v1';
+let favoriteProductIds = new Set();
+try {
+  const storedFavorites = JSON.parse(localStorage.getItem(AYLA_FAVORITES_KEY) || '[]');
+  if (Array.isArray(storedFavorites)) favoriteProductIds = new Set(storedFavorites.map(Number).filter(Number.isFinite));
+} catch(e) { favoriteProductIds = new Set(); }
+function saveFavoriteProductIds(){
+  try { localStorage.setItem(AYLA_FAVORITES_KEY, JSON.stringify([...favoriteProductIds])); } catch(e) {}
+}
+function isFavoriteProduct(id){ return favoriteProductIds.has(Number(id)); }
+function toggleFavoriteProduct(id){
+  const numericId = Number(id);
+  if (favoriteProductIds.has(numericId)) favoriteProductIds.delete(numericId); else favoriteProductIds.add(numericId);
+  saveFavoriteProductIds();
+  renderItemsView();
+}
+function toggleCatalogAvailability(){ catalogAvailabilityOnly = !catalogAvailabilityOnly; renderItemsView(); }
+function toggleFavoritesOnly(){ catalogFavoritesOnly = !catalogFavoritesOnly; renderItemsView(); }
+function cycleCatalogSort(){
+  catalogSortMode = catalogSortMode === 'recommended' ? 'price_low' : (catalogSortMode === 'price_low' ? 'price_high' : (catalogSortMode === 'price_high' ? 'name' : 'recommended'));
+  renderItemsView();
+}
+function resetCatalogTools(){ catalogSortMode = 'recommended'; catalogAvailabilityOnly = false; catalogFavoritesOnly = false; }
+function updateCatalogTools(){
+  const tools = document.getElementById('catalogTools');
+  if (!tools) return;
+  const shouldShow = appMode === 'store' && viewLevel === 'items' && activeCat !== '__retail_offers__' && !activeOfferId;
+  tools.style.display = shouldShow ? 'flex' : 'none';
+  const availability = document.getElementById('catalogAvailabilityBtn');
+  const sort = document.getElementById('catalogSortBtn');
+  const favorites = document.getElementById('catalogFavoritesBtn');
+  if (availability) { availability.classList.toggle('active', catalogAvailabilityOnly); availability.textContent = catalogAvailabilityOnly ? '✓ المتوفر فقط' : '✓ المتوفر أولاً'; }
+  if (sort) sort.textContent = ({recommended:'ترتيب: الموصى به', price_low:'السعر: الأقل أولاً', price_high:'السعر: الأعلى أولاً', name:'الاسم: أ–ي'})[catalogSortMode] || 'ترتيب';
+  if (favorites) { favorites.classList.toggle('favorites-active', catalogFavoritesOnly); favorites.textContent = catalogFavoritesOnly ? '♥ المفضلة فقط' : '♡ المفضلة'; }
+}
 // أي عرض بقسم المفرق مفتوح حالياً بشاشة التفاصيل (null = عم نعرض قائمة العروض الأفقية)
 let activeOfferId = null;
 const RETAIL_CATS_ORDER = [
@@ -3357,6 +3409,7 @@ function updateTotalProductsBadge(){
 }
 function renderApp(){
   updateTotalProductsBadge();
+  updateCatalogTools();
   const __navKey = appMode + '|' + wholesaleUnlocked + '|' + viewLevel + '|' + activeCat + '|' + activeSub + '|' + activeOfferId;
   const __navChanged = __lastNavKey !== null && __navKey !== __lastNavKey;
   __lastNavKey = __navKey;
@@ -7000,7 +7053,7 @@ function navigateToCategory(key){
       return;
     }
   }
-  activeCat = key; viewLevel = 'items'; searchQuery = ''; activeSub = 'all';
+  activeCat = key; viewLevel = 'items'; searchQuery = ''; activeSub = 'all'; resetCatalogTools();
   document.getElementById('searchInput').value = '';
   pushNavState(); renderApp(); resetScrollTop();
 }
@@ -7647,6 +7700,12 @@ function renderItemsView(){
     subset = subset.filter(p => !p.subsub);
   }
 
+  if (catalogAvailabilityOnly) subset = subset.filter(p => !p.outOfStock);
+  if (catalogFavoritesOnly) subset = subset.filter(p => isFavoriteProduct(p.id));
+  const catalogPriceOf = p => Number(wholesaleUnlocked ? (p.priceWholesale || p.priceRetail) : p.priceRetail) || 0;
+  if (catalogSortMode === 'price_low') subset = subset.slice().sort((a,b) => catalogPriceOf(a) - catalogPriceOf(b));
+  else if (catalogSortMode === 'price_high') subset = subset.slice().sort((a,b) => catalogPriceOf(b) - catalogPriceOf(a));
+  else if (catalogSortMode === 'name') subset = subset.slice().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
   // المتاح يظهر أولاً، والنافد يبقى محفوظًا لكنه ينتقل لآخر القائمة.
   // نستخدم ترتيبًا مستقرًا حتى يحافظ كل منتج على ترتيبه الطبيعي، ويعود إليه
   // تلقائيًا عندما يصبح متاحًا من جديد.
@@ -7657,7 +7716,9 @@ function renderItemsView(){
   }).map(x => x.p);
   window._currentItemsSubset = subset;
   if(subset.length === 0 && !subBrandCardsHtml && !subSectionCardsHtml && !companyIntroHtml){
-    target.innerHTML = `<div class="empty-msg">هذا القسم تحت المعالجة، انتظرونا قريبًا 📦</div>`;
+    target.innerHTML = catalogFavoritesOnly
+      ? `<div class="catalog-empty-state">لا توجد أصناف محفوظة هنا بعد.<br><button type="button" onclick="catalogFavoritesOnly=false; renderItemsView();" style="margin-top:10px;border:0;border-radius:14px;background:var(--green);color:#fff;padding:9px 14px;font-weight:800;cursor:pointer;">عرض كل الأصناف</button></div>`
+      : (catalogAvailabilityOnly ? `<div class="catalog-empty-state">لا توجد أصناف متوفرة حاليًا في هذا النطاق.</div>` : `<div class="empty-msg">هذا القسم تحت المعالجة، انتظرونا قريبًا 📦</div>`);
     return;
   }
 
@@ -7698,6 +7759,7 @@ function renderItemsView(){
     }
     return `
       <div class="card" style="position:relative;">
+        <button type="button" class="card-favorite-btn${isFavoriteProduct(p.id) ? ' is-favorite' : ''}" onclick="event.stopPropagation(); toggleFavoriteProduct(${p.id})" aria-label="${isFavoriteProduct(p.id) ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}">${isFavoriteProduct(p.id) ? '♥' : '♡'}</button>
         ${POPULAR_PRODUCT_IDS.has(p.id) ? `<div class="popular-badge">🔥 الأكثر طلباً</div>` : ''}
         ${(adminEditMode && !companyAdminScope) ? `<button onclick="openQuickEditModal(${p.id})" style="position:absolute; top:6px; left:6px; z-index:5; background:var(--gold); color:#3A2F1B; border:none; border-radius:50%; width:28px; height:28px; font-size:14px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">✏️</button>` : ''}
         ${(adminEditMode && !companyAdminScope) ? `<div style="position:absolute; top:6px; right:6px; z-index:5; display:flex; flex-direction:column; gap:3px;">
