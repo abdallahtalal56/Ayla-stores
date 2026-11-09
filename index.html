@@ -433,6 +433,17 @@
   .cart-float-text{ color:#fff; font-size:13px; font-weight:700;}
   .cart-float-total{ color:#fff; font-family:'Cairo',sans-serif; font-weight:800; font-size:14.5px;}
 
+  /* شريط تنقل سفلي ثابت للمستهلك — العرض فقط، لا يغيّر منطق المزامنة أو السلة */
+  .retail-bottom-nav{ display:none; position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(100%,520px); min-height:64px; padding:7px 8px calc(7px + env(safe-area-inset-bottom,0px)); background:rgba(255,255,255,.96); border-top:1px solid rgba(201,162,39,.18); box-shadow:0 -7px 22px rgba(58,47,27,.12); z-index:46; direction:rtl; backdrop-filter:blur(14px); }
+  .retail-bottom-nav.is-visible{ display:grid; grid-template-columns:repeat(5,1fr); gap:4px; }
+  .retail-bottom-nav button{ position:relative; min-width:0; border:0; border-radius:13px; padding:5px 2px 4px; background:transparent; color:#8a7a5d; font:inherit; font-size:10px; font-weight:800; line-height:1.2; cursor:pointer; transition:background .16s ease,color .16s ease,transform .16s ease; }
+  .retail-bottom-nav button:active{ transform:scale(.96); }
+  .retail-bottom-nav button.active{ background:#fff7df; color:#8f6d19; }
+  .retail-bottom-nav .retail-bottom-icon{ display:block; height:23px; margin-bottom:2px; font-size:21px; line-height:23px; }
+  .retail-bottom-nav .retail-bottom-label{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .retail-bottom-cart-badge{ position:absolute; top:1px; right:calc(50% - 22px); min-width:16px; height:16px; padding:0 4px; border-radius:10px; background:var(--red); color:#fff; font-size:9px; font-weight:900; line-height:16px; }
+  #screenStore{ padding-bottom:calc(78px + env(safe-area-inset-bottom,0px)); }
+  @media (prefers-reduced-motion: reduce){ .retail-bottom-nav button{ transition:none; } }
   /* DIALOGS OVERLAY */
   .overlay{ position:fixed; inset:0; background:rgba(16,25,58,0.6); z-index:60; opacity:0; pointer-events:none; transition:.25s;}
   .overlay.show{ opacity:1; pointer-events:auto;}
@@ -994,6 +1005,24 @@
     </div>
   </div>
 
+  <nav class="retail-bottom-nav" id="retailBottomNav" aria-label="التنقل الرئيسي">
+    <button type="button" data-bottom-nav="home" onclick="retailBottomNavHome()" aria-label="الرئيسية">
+      <span class="retail-bottom-icon">⌂</span><span class="retail-bottom-label">الرئيسية</span>
+    </button>
+    <button type="button" data-bottom-nav="categories" onclick="retailBottomNavCategories()" aria-label="الأقسام">
+      <span class="retail-bottom-icon">▦</span><span class="retail-bottom-label">الأقسام</span>
+    </button>
+    <button type="button" data-bottom-nav="search" onclick="retailBottomNavSearch()" aria-label="البحث">
+      <span class="retail-bottom-icon">⌕</span><span class="retail-bottom-label">البحث</span>
+    </button>
+    <button type="button" data-bottom-nav="cart" onclick="retailBottomNavCart()" aria-label="السلة">
+      <span class="retail-bottom-cart-badge" id="retailBottomCartBadge" hidden>0</span>
+      <span class="retail-bottom-icon">🛒</span><span class="retail-bottom-label">السلة</span>
+    </button>
+    <button type="button" data-bottom-nav="account" onclick="retailBottomNavAccount()" aria-label="حسابي">
+      <span class="retail-bottom-icon">♙</span><span class="retail-bottom-label">حسابي</span>
+    </button>
+  </nav>
   <div class="cart-float" id="cartFloat" onclick="toggleCartDrawer(true)">
     <div class="cart-float-left">
       <div class="cart-count" id="cartCountLabel">0</div>
@@ -3427,8 +3456,43 @@ function renderApp(){
   }
   
   updateCartPreview();
+  updateRetailBottomNav();
   if (__navChanged) resetScrollTop();
 }
+
+function updateRetailBottomNav(){
+  const nav = document.getElementById('retailBottomNav');
+  if (!nav) return;
+  const visible = appMode === 'store' && !wholesaleUnlocked;
+  nav.classList.toggle('is-visible', visible);
+  if (!visible) return;
+  const activeKey = searchQuery ? 'search' : (viewLevel === 'items' ? 'categories' : 'home');
+  nav.querySelectorAll('[data-bottom-nav]').forEach(btn => btn.classList.toggle('active', btn.dataset.bottomNav === activeKey));
+  let count = 0;
+  Object.keys(cart).forEach(id => { count += Number(cart[id]) || 0; });
+  const badge = document.getElementById('retailBottomCartBadge');
+  if (badge){ badge.textContent = count > 99 ? '99+' : String(count); badge.hidden = count < 1; }
+}
+function retailBottomNavHome(){
+  if (appMode !== 'store' || wholesaleUnlocked){ enterRetailMode(); return; }
+  viewLevel = 'categories'; activeCat = null; activeOfferId = null; searchQuery = ''; activeSub = 'all';
+  const input = document.getElementById('searchInput'); if (input) input.value = '';
+  pushNavState(); renderApp(); window.scrollTo({ top:0, behavior:'smooth' });
+}
+function retailBottomNavCategories(){
+  if (appMode !== 'store' || wholesaleUnlocked){ enterRetailMode(); return; }
+  if (viewLevel !== 'categories' || activeCat){ viewLevel = 'categories'; activeCat = null; activeOfferId = null; searchQuery = ''; activeSub = 'all'; const input = document.getElementById('searchInput'); if (input) input.value = ''; pushNavState(); renderApp(); }
+  requestAnimationFrame(() => document.getElementById('viewCategories')?.scrollIntoView({ behavior:'smooth', block:'start' }));
+}
+function retailBottomNavSearch(){
+  if (appMode !== 'store' || wholesaleUnlocked){ enterRetailMode(); }
+  requestAnimationFrame(() => { const input = document.getElementById('searchInput'); if (input){ input.scrollIntoView({ behavior:'smooth', block:'center' }); input.focus({ preventScroll:true }); } });
+}
+function retailBottomNavCart(){
+  if (appMode !== 'store' || wholesaleUnlocked){ enterRetailMode(); }
+  toggleCartDrawer(true);
+}
+function retailBottomNavAccount(){ showCustomerRegistration(); }
 
 function handleBackButton(){
   if(viewLevel === 'items'){
@@ -7877,6 +7941,7 @@ function updateCartPreview(){
   } else {
     bar.classList.remove('show'); closeAllPopups();
   }
+  if (typeof updateRetailBottomNav === 'function') updateRetailBottomNav();
 }
 
 function toggleCartDrawer(open){
