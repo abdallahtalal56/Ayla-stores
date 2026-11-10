@@ -1018,6 +1018,7 @@
       <div id="subcatBar" style="display:none; gap:8px; padding:0 14px 12px; overflow-x:auto; -webkit-overflow-scrolling:touch;"></div>
       <div id="catalogTools" class="catalog-tools" style="display:none;">
         <button type="button" id="catalogAvailabilityBtn" onclick="toggleCatalogAvailability()">✓ المتوفر أولاً</button>
+        <button type="button" id="catalogValueBtn" onclick="showLowestPrices()">💰 الأقل سعرًا</button>
         <button type="button" id="catalogSortBtn" onclick="cycleCatalogSort()">ترتيب: الموصى به</button>
         <button type="button" id="catalogFavoritesBtn" onclick="toggleFavoritesOnly()">♡ المفضلة</button>
       </div>
@@ -2134,6 +2135,7 @@ function toggleFavoriteProduct(id){
 }
 function toggleCatalogAvailability(){ catalogAvailabilityOnly = !catalogAvailabilityOnly; renderItemsView(); }
 function toggleFavoritesOnly(){ catalogFavoritesOnly = !catalogFavoritesOnly; renderItemsView(); }
+function showLowestPrices(){ catalogSortMode = catalogSortMode === 'price_low' ? 'recommended' : 'price_low'; renderItemsView(); }
 function cycleCatalogSort(){
   catalogSortMode = catalogSortMode === 'recommended' ? 'price_low' : (catalogSortMode === 'price_low' ? 'price_high' : (catalogSortMode === 'price_high' ? 'name' : 'recommended'));
   renderItemsView();
@@ -2147,7 +2149,9 @@ function updateCatalogTools(){
   const availability = document.getElementById('catalogAvailabilityBtn');
   const sort = document.getElementById('catalogSortBtn');
   const favorites = document.getElementById('catalogFavoritesBtn');
+  const value = document.getElementById('catalogValueBtn');
   if (availability) { availability.classList.toggle('active', catalogAvailabilityOnly); availability.textContent = catalogAvailabilityOnly ? '✓ المتوفر فقط' : '✓ المتوفر أولاً'; }
+  if (value) { value.classList.toggle('active', catalogSortMode === 'price_low'); value.textContent = catalogSortMode === 'price_low' ? '✓ الأقل سعرًا' : '💰 الأقل سعرًا'; }
   if (sort) sort.textContent = ({recommended:'ترتيب: الموصى به', price_low:'السعر: الأقل أولاً', price_high:'السعر: الأعلى أولاً', name:'الاسم: أ–ي'})[catalogSortMode] || 'ترتيب';
   if (favorites) { favorites.classList.toggle('favorites-active', catalogFavoritesOnly); favorites.textContent = catalogFavoritesOnly ? '♥ المفضلة فقط' : '♡ المفضلة'; }
 }
@@ -6816,9 +6820,11 @@ function renderRetailDynamicSections(){
   if (recommended.length < 6) recommended = [...recommended, ...products.filter(p => !recommended.some(x => x.id === p.id) && !popular.some(x => x.id === p.id))];
   recommended = recommended.slice(0, 8);
   const newest = products.slice().sort((a,b) => Number(b.sourceId || b.id) - Number(a.sourceId || a.id)).slice(0, 8);
+  const bestValue = products.slice().sort((a,b) => (Number(a.priceRetail) || 0) - (Number(b.priceRetail) || 0)).slice(0, 8);
   const sections = [
     { key:'popular', title:'الأكثر مبيعًا', hint:popular.length ? 'اختيارات يطلبها الزبائن' : 'سيظهر بعد تسجيل أول الطلبات', products:popular, badge:'🔥 الأكثر طلبًا' },
     { key:'recommended', title:'منتجات مقترحة لك', hint:(favorite.length || CUSTOMER_BOUGHT_CATEGORIES.size) ? 'مبنية على تفضيلاتك وطلباتك' : 'اختيارات مختارة من الكتالوج', products:recommended, badge:'✨ مقترح' },
+    { key:'value', title:'الأكثر توفيرًا', hint:'أقل الأسعار الحالية — بدون خصم وهمي', products:bestValue, badge:'💰 سعر منخفض' },
     { key:'new', title:'التشكيلة الجديدة', hint:catalogSyncLabel(), products:newest, badge:'🆕 ضمن آخر تحديث' }
   ];
   box.innerHTML = sections.filter(section => section.products.length).map(section => {
