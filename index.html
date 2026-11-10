@@ -997,6 +997,7 @@
         <div class="retail-category-rail" id="retailCategoryRail" aria-label="أقسام المتجر"></div>
       </div>
       <div class="retail-dynamic-sections" id="retailDynamicSections" aria-label="اختيارات المتجر"></div>
+      <div class="retail-dynamic-sections" id="retailRecentlyViewed" aria-label="المنتجات التي شاهدتها مؤخرًا"></div>
       <div class="retail-brand-strip" id="retailBrandStrip" aria-label="العلامات التجارية"></div>
     </section>
 
@@ -6797,11 +6798,29 @@ function homeProductCandidates(){
 function openProductDetail(id){
   const product = PRODUCTS_DATA.find(p => Number(p.id) === Number(id));
   if (!product) return;
+  rememberRecentlyViewed(product.id);
   activeProductId = Number(product.id);
   activeCat = product.category || null; viewLevel = 'items'; searchQuery = ''; activeSub = 'all'; activeOfferId = null;
   pushNavState(); renderApp(); resetScrollTop();
 }
 function openHomeProduct(id){ openProductDetail(id); }
+const RECENTLY_VIEWED_KEY = 'ayla_recently_viewed_v1';
+function loadRecentlyViewed(){
+  try { const ids = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]'); return Array.isArray(ids) ? ids.map(Number).filter(Number.isFinite).slice(0, 12) : []; } catch(e) { return []; }
+}
+function rememberRecentlyViewed(id){
+  const n = Number(id); if (!Number.isFinite(n)) return;
+  const next = [n, ...loadRecentlyViewed().filter(item => item !== n)].slice(0, 12);
+  try { localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(next)); } catch(e) {}
+}
+function renderRecentlyViewed(){
+  const box = document.getElementById('retailRecentlyViewed'); if (!box) return;
+  const byId = new Map(PRODUCTS_DATA.map(p => [Number(p.id), p]));
+  const products = loadRecentlyViewed().map(id => byId.get(id)).filter(p => p && !p.pendingApproval && !p.__isOffer && !p.__isSpecialOffer && !RETAIL_HIDDEN_IDS.includes(p.id)).slice(0, 8);
+  if (!products.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<section class="retail-dynamic-section"><div class="retail-dynamic-head"><strong>شاهدتها مؤخرًا</strong><div class="retail-dynamic-head-meta"><span>نكمل من حيث توقفت</span><button type="button" class="retail-dynamic-more" onclick="clearRecentlyViewed()">مسح</button></div></div><div class="retail-product-rail">${products.map(p => renderRetailDynamicProductCard(p, '')).join('')}</div></section>`;
+}
+function clearRecentlyViewed(){ try { localStorage.removeItem(RECENTLY_VIEWED_KEY); } catch(e) {} renderRecentlyViewed(); }
 function shareProductDetail(id){
   const product = PRODUCTS_DATA.find(p => Number(p.id) === Number(id));
   if (!product) return;
@@ -7003,6 +7022,7 @@ function renderRetailHomeUpgrade(){
       </button>`;
   }).join('');
   renderRetailDynamicSections();
+  renderRecentlyViewed();
   renderRetailBrandStrip();
 }
 
