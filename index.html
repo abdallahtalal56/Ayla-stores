@@ -6798,7 +6798,7 @@ function homeProductCandidates(){
 function openProductDetail(id){
   const product = PRODUCTS_DATA.find(p => Number(p.id) === Number(id));
   if (!product) return;
-  rememberRecentlyViewed(product.id);
+  rememberRecentlyViewed(product);
   activeProductId = Number(product.id);
   activeCat = product.category || null; viewLevel = 'items'; searchQuery = ''; activeSub = 'all'; activeOfferId = null;
   pushNavState(); renderApp(); resetScrollTop();
@@ -6806,25 +6806,36 @@ function openProductDetail(id){
 function openHomeProduct(id){ openProductDetail(id); }
 const RECENTLY_VIEWED_KEY = 'ayla_recently_viewed_v1';
 function loadRecentlyViewed(){
-  try { const ids = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]'); return Array.isArray(ids) ? ids.map(Number).filter(Number.isFinite).slice(0, 12) : []; } catch(e) { return []; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
+    if (!Array.isArray(raw)) return [];
+    return raw.map(entry => entry && typeof entry === 'object'
+      ? { id:Number(entry.id), sourceId:String(entry.sourceId || '').trim(), viewedAt:Number(entry.viewedAt || 0) }
+      : { id:Number(entry), sourceId:'', viewedAt:0 }
+    ).filter(entry => Number.isFinite(entry.id) || entry.sourceId).slice(0, 12);
+  } catch(e) { return []; }
 }
-function rememberRecentlyViewed(id){
-  const n = Number(id); if (!Number.isFinite(n)) return;
-  const next = [n, ...loadRecentlyViewed().filter(item => item !== n)].slice(0, 12);
+function rememberRecentlyViewed(product){
+  const item = typeof product === 'object' ? product : PRODUCTS_DATA.find(p => Number(p.id) === Number(product));
+  if (!item) return;
+  const n = Number(item.id); const sourceId = String(item.sourceId || item.sourceProductId || '').trim();
+  if (!Number.isFinite(n) && !sourceId) return;
+  const next = [{ id:n, sourceId, viewedAt:Date.now() }, ...loadRecentlyViewed().filter(entry => !(sourceId && entry.sourceId === sourceId) && !(Number.isFinite(n) && entry.id === n))].slice(0, 12);
   try { localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(next)); } catch(e) {}
 }
 function renderRecentlyViewed(){
   const box = document.getElementById('retailRecentlyViewed'); if (!box) return;
   const byId = new Map(PRODUCTS_DATA.map(p => [Number(p.id), p]));
-  const products = loadRecentlyViewed().map(id => byId.get(id)).filter(p => p && !p.pendingApproval && !p.__isOffer && !p.__isSpecialOffer && !RETAIL_HIDDEN_IDS.includes(p.id)).slice(0, 8);
-  if (!products.length) { box.innerHTML = ''; return; }
-  box.innerHTML = `<section class="retail-dynamic-section"><div class="retail-dynamic-head"><strong>شاهدتها مؤخرًا</strong><div class="retail-dynamic-head-meta"><span>نكمل من حيث توقفت</span><button type="button" class="retail-dynamic-more" onclick="clearRecentlyViewed()">مسح</button></div></div><div class="retail-product-rail">${products.map(p => renderRetailDynamicProductCard(p, '')).join('')}</div></section>`;
+  const bySource = new Map(PRODUCTS_DATA.map(p => [String(p.sourceId || p.sourceProductId || ''), p]).filter(([key]) => key));
+  const products = loadRecentlyViewed().map(entry => bySource.get(entry.sourceId) || byId.get(entry.id)).filter(p => p && !p.pendingApproval && !p.__isOffer && !p.__isSpecialOffer && !RETAIL_HIDDEN_IDS.includes(p.id)).slice(0, 8);
+  const content = products.length ? `<div class="retail-product-rail">${products.map(p => renderRetailDynamicProductCard(p, '')).join('')}</div>` : `<div class="retail-dynamic-empty">افتح أي منتج من المتجر ليظهر هنا وتعود إليه بسرعة.</div>`;
+  box.innerHTML = `<section class="retail-dynamic-section"><div class="retail-dynamic-head"><strong>شاهدتها مؤخرًا</strong><div class="retail-dynamic-head-meta"><span>${products.length ? 'نكمل من حيث توقفت' : 'اختصار شخصي لك'}</span>${products.length ? '<button type="button" class="retail-dynamic-more" onclick="clearRecentlyViewed()">مسح</button>' : ''}</div></div>${content}</section>`;
 }
 function clearRecentlyViewed(){ try { localStorage.removeItem(RECENTLY_VIEWED_KEY); } catch(e) {} renderRecentlyViewed(); }
 function shareProductDetail(id){
   const product = PRODUCTS_DATA.find(p => Number(p.id) === Number(id));
   if (!product) return;
-  const url = new URL(window.location.href); url.search = ''; url.hash = 'product=' + encodeURIComponent(String(product.sourceId || product.id));
+  const url = new URL(window.location.href); url.search = ''; url.hash = encodeURIComponent(`product::${String(product.sourceId || product.id)}`);
   const shareData = { title: product.name || 'منتج من ايلا ستورز', text: `شاهد ${product.name || 'هذا المنتج'} على ايلا ستورز`, url: url.toString() };
   if (navigator.share) navigator.share(shareData).catch(() => {});
   else if (navigator.clipboard) navigator.clipboard.writeText(url.toString()).then(() => alert('تم نسخ رابط المنتج للمشاركة')).catch(() => {});
@@ -7695,7 +7706,10 @@ function renderItemsView(){
     if (p.__isOffer) return false; // عروض المفرق إلها شاشتها الخاصة فوق، ما بتظهر بأي قائمة عادية
     if (wholesaleUnlocked && WHOLESALE_HIDDEN_IDS.includes(p.id)) return false; // أصناف خاصة بالمفرق (ايلا ستورز) فقط — ممنوعة قطعياً من الظهور بقسم الجملة
     if (searchQuery) {
-      if (!normalizeArabicSearch(p.name).includes(normalizeArabicSearch(searchQuery))) return false;
+      const normalizedQuery = normalizeArabicSearch(searchQuery);
+      const categoryLabel = CATEGORIES[p.category]?.name || RETAIL_CATEGORY_GROUPS[p.category]?.name || p.category || '';
+      const searchable = [p.name, p.unit, categoryLabel, p.sourceSubcategoryName, getBrand(p.name)].map(normalizeArabicSearch).join(' ');
+      if (!normalizedQuery.split(' ').filter(Boolean).every(term => searchable.includes(term))) return false;
       // لو عم نبحث جوا صفحة شركة محددة، نحصر النتائج بأصناف هالشركة بس (مش كل الشركات سوا)
       if (isBrandCat) return getBrand(p.name) === brandName;
       // نفس منطق التصفية العادي: بوضع الجملة نعرض بس الأصناف المصنّفة لشركة معروفة،
@@ -8102,7 +8116,10 @@ function updateSearchSuggestions(value = ''){
   const list = document.getElementById('aylaSearchSuggestions'); if (!list) return;
   const query = normalizeArabicSearch(value);
   const recent = loadSearchHistory();
-  const matches = query ? PRODUCTS_DATA.filter(p => normalizeArabicSearch(p.name).includes(query)).slice(0, 8).map(p => p.name) : [];
+  const matches = query ? PRODUCTS_DATA.filter(p => {
+    const categoryLabel = CATEGORIES[p.category]?.name || RETAIL_CATEGORY_GROUPS[p.category]?.name || p.category || '';
+    return [p.name, p.unit, categoryLabel, p.sourceSubcategoryName, getBrand(p.name)].map(normalizeArabicSearch).join(' ').includes(query);
+  }).slice(0, 8).map(p => p.name) : [];
   const suggestions = [...new Set([...matches, ...recent])].slice(0, 10);
   list.innerHTML = suggestions.map(item => `<option value="${String(item).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"></option>`).join('');
 }
