@@ -454,6 +454,9 @@
   .card-favorite-btn{ position:absolute; top:7px; left:7px; z-index:7; width:30px; height:30px; border:1px solid rgba(201,162,39,.22); border-radius:50%; background:rgba(255,255,255,.94); color:#a58a4a; font-size:18px; line-height:1; cursor:pointer; box-shadow:0 2px 8px rgba(16,25,58,.1); }
   .card-favorite-btn.is-favorite{ color:#d64d43; background:#fff1ee; border-color:#efb2aa; }
   .catalog-empty-state{ grid-column:1/-1; text-align:center; padding:32px 18px; border:1px dashed var(--line); border-radius:18px; background:#fffdf7; color:var(--gray); font-size:13px; line-height:1.8; }
+  .retail-catalog-status{ display:flex; align-items:center; justify-content:center; gap:5px; width:max-content; max-width:100%; margin:10px auto 0; padding:5px 10px; border-radius:999px; background:rgba(255,255,255,.14); color:#f7f0db; font:800 10px 'Tajawal',sans-serif; }
+  .retail-catalog-status.status-offline,.retail-catalog-status.status-cached{ background:rgba(255,213,125,.17); color:#ffe5a5; }
+  .retail-catalog-status.status-error{ background:rgba(255,117,105,.18); color:#ffd2cc; }
   #screenStore{ padding-bottom:calc(78px + env(safe-area-inset-bottom,0px)); }
   @media (prefers-reduced-motion: reduce){ .retail-bottom-nav button{ transition:none; } }
   /* DIALOGS OVERLAY */
@@ -987,6 +990,7 @@
         <div class="retail-search-shortcut" onclick="document.getElementById('searchInput').focus(); document.getElementById('searchInput').scrollIntoView({behavior:'smooth',block:'center'});" role="button" tabindex="0">
           <b>⌕</b><span>ابحث عن منتج، ماركة أو قسم…</span>
         </div>
+        <div class="retail-catalog-status" id="retailCatalogStatus" aria-live="polite"></div>
       </div>
       <div class="retail-home-heading"><strong>تسوّق حسب احتياجك</strong><span>اختصارات سريعة</span></div>
       <div class="retail-quick-grid" id="retailQuickGrid"></div>
@@ -1655,14 +1659,15 @@ function setOfflineUi(isOffline){
   banner.textContent = isOffline ? 'أنتِ بدون إنترنت — نعرض آخر نسخة محفوظة من المتجر' : 'رجع الاتصال — يتم تحديث المنتجات بهدوء';
   banner.style.transform = 'translateY(0)';
   banner.style.opacity = '1';
+  if (typeof updateRetailCatalogStatus === 'function') updateRetailCatalogStatus();
   clearTimeout(window._aylaConnectionBannerTimer);
   window._aylaConnectionBannerTimer = setTimeout(() => {
     banner.style.transform = 'translateY(-140%)';
     banner.style.opacity = '0';
   }, isOffline ? 5000 : 2200);
 }
-window.addEventListener('offline', () => setOfflineUi(true));
-window.addEventListener('online', () => { setOfflineUi(false); loadAylaV2Catalog({ background: true, forceNetwork: true }).catch(() => {}); });
+window.addEventListener('offline', () => { aylaV2CatalogState = { ...aylaV2CatalogState, status:'offline' }; setOfflineUi(true); });
+window.addEventListener('online', () => { aylaV2CatalogState = { ...aylaV2CatalogState, status:'refreshing' }; setOfflineUi(false); loadAylaV2Catalog({ background: true, forceNetwork: true }).catch(() => {}); });
 
 // ===== تسجيل عميل Ayla مرة واحدة بدون SMS مع جلسة محفوظة =====
 const AYLA_CUSTOMER_API = 'https://aylastore-xrwrnz39.manus.space/api/customer';
@@ -3234,6 +3239,7 @@ async function loadAylaV2Catalog(options = {}){
     }
     requestPersistentStorage();
     aylaV2CatalogState = { status: 'success', total: catalogTotal, accepted: accepted.length, rejected: Math.max(0, catalogTotal - accepted.length), lastSync: Date.now(), error: '', catalogVersion };
+    updateRetailCatalogStatus();
     if (changed && typeof renderApp === 'function') renderApp();
     if (typeof handleInitialDeepLink === 'function') handleInitialDeepLink();
     if (typeof renderAylaSyncAgent === 'function' && document.getElementById('syncAgentBox')?.style.display === 'block') renderAylaSyncAgent();
@@ -3246,9 +3252,11 @@ async function loadAylaV2Catalog(options = {}){
       // an offline warning on every startup. The saved catalog remains usable;
       // the explicit banner is reserved for a real offline state.
       if (actuallyOffline && !silentFallback) setOfflineUi(true);
+      updateRetailCatalogStatus();
       return PRODUCTS_DATA;
     }
     aylaV2CatalogState = { ...aylaV2CatalogState, status: 'error', error: error?.message || 'تعذر تحميل كتالوج Ayla V2' };
+    updateRetailCatalogStatus();
     throw error;
   }
 }
@@ -6977,10 +6985,28 @@ function toggleHomeSection(sectionKey){
   if (expandedHomeSections.has(sectionKey)) expandedHomeSections.delete(sectionKey); else expandedHomeSections.add(sectionKey);
   renderRetailDynamicSections();
 }
-function catalogSyncLabel(){
+  function catalogSyncLabel(){
   const sync = Number(aylaV2CatalogState?.lastSync || 0);
   if (!sync) return 'محدّث من كتالوج Ayla';
   return 'آخر مزامنة ' + new Date(sync).toLocaleDateString('ar-JO', { day:'numeric', month:'short' });
+  }
+function updateRetailCatalogStatus(){
+  const el = document.getElementById('retailCatalogStatus');
+  if (!el) return;
+  const state = aylaV2CatalogState || {};
+  const labels = {
+    success: ['🟢', 'الكتالوج متصل ومحدّث'],
+    refreshing: ['🔄', 'يجري التحقق من آخر تحديث'],
+    loading: ['🔄', 'يجري تحميل الكتالوج'],
+    offline: ['🟡', 'تعمل على آخر نسخة محفوظة دون اتصال'],
+    cached: ['🟡', 'نسخة محفوظة — سنحدّثها عند توفر الاتصال'],
+    error: ['🔴', 'تعذر التحديث — البيانات الحالية محفوظة']
+  };
+  const [icon, text] = labels[state.status] || ['🔵', 'جاهز للتسوق'];
+  const sync = Number(state.lastSync || 0);
+  const time = sync ? ` · ${new Date(sync).toLocaleTimeString('ar-JO', {hour:'2-digit', minute:'2-digit'})}` : '';
+  el.innerHTML = `<span>${icon}</span><span>${text}${time}</span>`;
+  el.className = `retail-catalog-status status-${state.status || 'idle'}`;
 }
 function renderRetailDynamicSections(){
   const box = document.getElementById('retailDynamicSections');
@@ -7016,6 +7042,7 @@ function renderRetailDynamicSections(){
 }
 // اختصارات المرحلة الأولى: تعتمد على مفاتيح الأقسام الحالية ولا تنشئ أي بيانات جديدة.
 function renderRetailHomeUpgrade(){
+  updateRetailCatalogStatus();
   const grid = document.getElementById('retailQuickGrid');
   if (!grid) return;
   const quick = [
