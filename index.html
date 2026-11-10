@@ -544,6 +544,8 @@
   .product-detail-price-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:15px}.product-detail-price{color:#a74335;font-size:25px;font-weight:900}.product-detail-price small{font-size:12px;margin-right:4px}.product-detail-qty{display:flex;align-items:center;gap:8px;border:1px solid #e5d8c2;border-radius:14px;padding:4px}.product-detail-qty button{width:31px;height:31px;border:0;border-radius:10px;background:#f5efe4;color:var(--ink);font-size:19px;cursor:pointer}.product-detail-qty span{min-width:22px;text-align:center;font-weight:900;color:var(--ink)}
   .product-detail-action{width:100%;border:0;border-radius:15px;background:linear-gradient(135deg,#1f6a5a,#2d8772);color:#fff;padding:13px;margin-top:14px;font:900 14px 'Tajawal',sans-serif;cursor:pointer;box-shadow:0 7px 15px rgba(31,106,90,.2);transition:transform .16s ease}.product-detail-action.out{background:#a94336}.product-detail-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.product-detail-fact{background:#fbf7ef;border-radius:12px;padding:9px 5px;text-align:center;color:#7f765f;font-size:10px}.product-detail-fact b{display:block;color:#315c52;font-size:15px;margin-bottom:3px}.product-detail-related{margin-top:18px}.product-detail-related h3{margin:0 0 9px;color:#243d42;font:900 16px 'Cairo',sans-serif}.product-detail-related-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
   .product-detail-empty{padding:28px 12px;text-align:center;color:#8d877a;background:#fffdf8;border:1px dashed #dfd2bc;border-radius:16px;font-size:12px}
+  .product-detail-thumbs{display:flex;gap:7px;overflow-x:auto;margin-top:10px;padding-bottom:2px}.product-detail-thumbs::-webkit-scrollbar{height:0}.product-detail-thumb{flex:0 0 54px;cursor:pointer}.product-detail-thumb.active{border-color:var(--green);box-shadow:0 0 0 2px rgba(31,106,90,.12)}
+  .product-detail-rating{display:flex;align-items:center;gap:7px;margin-top:10px;color:#9a7a25;font-size:12px}.product-detail-stars{letter-spacing:1px;color:#e2a52d;font-size:17px}.product-detail-rating-count{color:#9a8b72;font-size:10px}.product-detail-alert{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:9px 11px;background:#fff8e6;border:1px solid #eed9a3;border-radius:13px;color:#7b6328;font-size:10.5px}.product-detail-alert button{border:0;border-radius:10px;background:#d39a2d;color:#fff;padding:7px 9px;font:800 10px 'Tajawal',sans-serif;cursor:pointer;white-space:nowrap}.product-detail-alert button.active{background:#27765d}.product-detail-reviews{margin-top:18px;background:#fff;border:1px solid #eee5d6;border-radius:20px;padding:14px;box-shadow:0 5px 16px rgba(78,59,27,.05)}.product-detail-reviews-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.product-detail-reviews h3{margin:0;color:#243d42;font:900 16px 'Cairo',sans-serif}.product-detail-review-summary{display:flex;align-items:center;gap:7px;color:#9a8b72;font-size:11px}.product-detail-review-summary b{color:#e2a52d;font-size:19px}.product-detail-review-form{margin-top:12px;padding-top:12px;border-top:1px solid #f0e8da}.product-detail-review-stars{display:flex;gap:4px;direction:rtl}.product-detail-review-stars button{border:0;background:transparent;color:#c8bda9;font-size:24px;padding:0;cursor:pointer}.product-detail-review-stars button.selected,.product-detail-review-stars button:hover{color:#e2a52d}.product-detail-review-form textarea{width:100%;box-sizing:border-box;min-height:62px;margin-top:8px;border:1px solid #e5d8c2;border-radius:12px;padding:9px;font:500 12px 'Tajawal',sans-serif;resize:vertical;outline:none}.product-detail-review-submit{border:0;border-radius:12px;background:var(--green);color:#fff;padding:9px 13px;margin-top:7px;font:800 11px 'Tajawal',sans-serif;cursor:pointer}.product-detail-review-list{display:grid;gap:8px;margin-top:12px}.product-detail-review{background:#fbf7ef;border-radius:13px;padding:10px}.product-detail-review-top{display:flex;justify-content:space-between;gap:7px;color:#75694f;font-size:10px}.product-detail-review-top strong{color:#315c52;font-size:11px}.product-detail-review-body{color:#66716e;font-size:11px;line-height:1.7;margin-top:5px}
   @media(min-width:700px){.product-detail-page{max-width:760px;margin:auto}.product-detail-hero{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}.product-detail-main-image{height:320px}.product-detail-info{margin-top:0}.product-detail-related-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
   @media(prefers-reduced-motion:reduce){.product-detail-page{animation:none}.product-detail-main-image img{transition:none}}
 </style>
@@ -6814,28 +6816,93 @@ function toggleProductAvailabilityAlert(id){
   const n = Number(id); ids = ids.includes(n) ? ids.filter(x => x !== n) : [...ids, n];
   localStorage.setItem(key, JSON.stringify(ids)); renderProductDetail(n);
 }
+const PRODUCT_REVIEW_CACHE = new Map();
+const PRODUCT_REVIEW_DRAFTS = new Map();
+const PRODUCT_GALLERY_INDEX = new Map();
+function productGalleryImages(product){
+  const raw = [];
+  ['images','imageUrls','gallery','galleryImages','photoUrls'].forEach(key => {
+    if (Array.isArray(product?.[key])) raw.push(...product[key]);
+  });
+  const urls = raw.map(item => typeof item === 'string' ? item : (item?.url || item?.imageUrl || item?.src || '')).filter(Boolean);
+  const first = productDisplayImage(product);
+  return [...new Set([first, ...urls].filter(Boolean))].slice(0, 8);
+}
+function productCustomerPhone(){
+  const profile = typeof customerProfile === 'function' ? customerProfile() : null;
+  return String(profile?.phone || localStorage.getItem('alaseel_visitor_phone') || '').trim();
+}
+function productReviewStars(rating){ return '★★★★★'.split('').map((star, i) => `<span style="color:${i < Number(rating) ? '#e2a52d' : '#c8bda9'}">${star}</span>`).join(''); }
+function reviewDocKey(productId, phone){ return `${String(productId)}_${String(phone).replace(/\D/g, '') || 'anonymous'}`; }
+function priceAlertKey(productId){ return `ayla_price_alert_${String(productId)}`; }
+function getSavedPriceAlert(productId){ try { return JSON.parse(localStorage.getItem(priceAlertKey(productId)) || 'null'); } catch(e){ return null; } }
+async function loadProductReviews(productId){
+  const target = document.getElementById(`productReviews-${Number(productId)}`);
+  if (!target) return;
+  try {
+    const snap = await db.collection('productReviews').where('productId', '==', String(productId)).limit(50).get();
+    const reviews = snap.docs.map(doc => Object.assign({ id: doc.id }, doc.data())).sort((a,b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+    PRODUCT_REVIEW_CACHE.set(Number(productId), reviews);
+    renderProductReviews(productId);
+  } catch(e){
+    PRODUCT_REVIEW_CACHE.set(Number(productId), []);
+    renderProductReviews(productId, 'تعذر تحميل التقييمات حاليًا.');
+  }
+}
+function renderProductReviews(productId, errorMessage = ''){
+  const target = document.getElementById(`productReviews-${Number(productId)}`); if (!target) return;
+  const reviews = PRODUCT_REVIEW_CACHE.get(Number(productId)) || [];
+  const average = reviews.length ? reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length : 0;
+  const summary = document.getElementById(`productRatingSummary-${Number(productId)}`);
+  if (summary) summary.innerHTML = `<span class="product-detail-stars">${average ? productReviewStars(Math.round(average)) : '☆☆☆☆☆'}</span><span class="product-detail-rating-count">${average ? average.toFixed(1) : 'لا تقييمات'} · ${reviews.length} تقييم</span>`;
+  const phone = productCustomerPhone(); const draft = PRODUCT_REVIEW_DRAFTS.get(Number(productId)) || { rating: 0, text: '' };
+  const eligible = target.dataset.eligible === '1';
+  const form = eligible ? `<div class="product-detail-review-form"><div style="color:#75694f;font-size:11px;margin-bottom:5px;">قيّم المنتج بعد تجربته</div><div class="product-detail-review-stars" aria-label="اختيار التقييم">${[5,4,3,2,1].map(n => `<button type="button" class="${Number(draft.rating) >= n ? 'selected' : ''}" onclick="setProductReviewRating(${Number(productId)},${n})" aria-label="${n} نجوم">★</button>`).join('')}</div><textarea id="productReviewText-${Number(productId)}" maxlength="400" placeholder="اكتب رأيك باختصار...">${draft.text || ''}</textarea><button type="button" class="product-detail-review-submit" onclick="submitProductReview(${Number(productId)})">إرسال التقييم</button></div>` : (phone ? '<div style="color:#9a8b72;font-size:10.5px;margin-top:11px;">يمكنك التقييم بعد إتمام طلب يحتوي هذا المنتج.</div>' : '<div style="color:#9a8b72;font-size:10.5px;margin-top:11px;">سجّل دخولك ثم قيّم المنتج بعد شرائه.</div>');
+  const list = errorMessage ? `<div class="product-detail-empty">${errorMessage}</div>` : (reviews.length ? `<div class="product-detail-review-list">${reviews.slice(0, 5).map(r => `<div class="product-detail-review"><div class="product-detail-review-top"><strong>${r.customerName || 'عميل ايلا'}</strong><span>${productReviewStars(r.rating)}</span></div>${r.text ? `<div class="product-detail-review-body">${r.text}</div>` : ''}</div>`).join('')}</div>` : '<div class="product-detail-empty" style="padding:15px 8px;margin-top:10px;">لا توجد تقييمات بعد — كن أول من يشارك رأيه.</div>');
+  target.innerHTML = `<div class="product-detail-reviews-head"><h3>تقييمات العملاء</h3><div class="product-detail-review-summary"><b>${average ? average.toFixed(1) : '—'}</b><span>${average ? productReviewStars(Math.round(average)) : '☆☆☆☆☆'}<br>${reviews.length} تقييم</span></div></div>${form}${list}`;
+}
+async function checkProductReviewEligibility(productId){
+  const target = document.getElementById(`productReviews-${Number(productId)}`); const phone = productCustomerPhone();
+  if (!target || !phone) { if (target) { target.dataset.eligible = '0'; renderProductReviews(productId); } return false; }
+  try {
+    const snap = await db.collection('orders').where('customerPhone', '==', phone).limit(100).get();
+    const eligible = snap.docs.some(doc => { const order = doc.data() || {}; const status = String(order.status || '').toLowerCase(); if (['cancelled','canceled','rejected','failed'].includes(status)) return false; return (order.items || []).some(item => Number(item.id) === Number(productId) || String(item.sourceProductId || '') === String(productId)); });
+    target.dataset.eligible = eligible ? '1' : '0'; renderProductReviews(productId); return eligible;
+  } catch(e){ target.dataset.eligible = '0'; renderProductReviews(productId); return false; }
+}
+function setProductReviewRating(productId, rating){ const draft = PRODUCT_REVIEW_DRAFTS.get(Number(productId)) || { rating: 0, text: '' }; draft.rating = Number(rating); PRODUCT_REVIEW_DRAFTS.set(Number(productId), draft); renderProductReviews(productId); }
+async function submitProductReview(productId){
+  const phone = productCustomerPhone(); const draft = PRODUCT_REVIEW_DRAFTS.get(Number(productId)) || { rating: 0, text: '' }; const textEl = document.getElementById(`productReviewText-${Number(productId)}`); const text = String(textEl?.value || draft.text || '').trim();
+  if (!phone) { openAylaCustomerAccount(); return; }
+  if (!draft.rating) { alert('اختر عدد النجوم أولًا'); return; }
+  if (!(await checkProductReviewEligibility(productId))) { alert('يمكنك التقييم بعد إتمام طلب يحتوي هذا المنتج.'); return; }
+  const profile = typeof customerProfile === 'function' ? customerProfile() : null;
+  try { await db.collection('productReviews').doc(reviewDocKey(productId, phone)).set({ productId: String(productId), customerPhone: phone, customerName: profile?.name || 'عميل ايلا', rating: Number(draft.rating), text, createdAtMs: Date.now(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); PRODUCT_REVIEW_DRAFTS.delete(Number(productId)); await loadProductReviews(productId); alert('تم حفظ تقييمك، شكرًا لك.'); }
+  catch(e){ alert('تعذر حفظ التقييم حاليًا، حاول مرة أخرى.'); }
+}
+async function toggleProductPriceAlert(productId, currentPrice){
+  const phone = productCustomerPhone(); if (!phone) { openAylaCustomerAccount(); return; }
+  const existing = getSavedPriceAlert(productId);
+  if (existing) { localStorage.removeItem(priceAlertKey(productId)); try { await db.collection('priceAlerts').doc(reviewDocKey(productId, phone)).delete(); } catch(e) {} renderProductDetail(productId); return; }
+  const suggested = currentPrice > 0 ? (currentPrice * 0.9).toFixed(2) : '';
+  const raw = prompt('أرسل تنبيهًا عندما يصبح السعر أقل من:', suggested); if (raw === null) return;
+  const targetPrice = Number(raw); if (!Number.isFinite(targetPrice) || targetPrice <= 0 || (currentPrice > 0 && targetPrice >= currentPrice)) { alert('اكتب سعرًا أقل من السعر الحالي.'); return; }
+  const product = PRODUCTS_DATA.find(x => Number(x.id) === Number(productId)); const record = { productId: String(productId), sourceProductId: String(product?.sourceId || ''), phone, targetPrice, currentPrice, productName: product?.name || '', enabled: true, createdAtMs: Date.now() };
+  localStorage.setItem(priceAlertKey(productId), JSON.stringify(record)); try { await db.collection('priceAlerts').doc(reviewDocKey(productId, phone)).set(record, { merge: true }); } catch(e) {} renderProductDetail(productId); alert(`تم حفظ التنبيه عند ${targetPrice.toFixed(2)} د.أ.`);
+}
+function setProductDetailGallery(productId, index){ PRODUCT_GALLERY_INDEX.set(Number(productId), Number(index)); renderProductDetail(productId); }
 function renderProductDetail(id){
   const shell = document.getElementById('productDetailView');
   const p = PRODUCTS_DATA.find(x => Number(x.id) === Number(id));
   if (!shell || !p) return;
-  const image = productDisplayImage(p);
-  const price = Number(wholesaleUnlocked ? (p.priceWholesale || p.priceRetail) : p.priceRetail) || 0;
-  const qty = Number(cart[p.id] || 0);
-  const brand = typeof getBrand === 'function' ? getBrand(p.name) : '';
-  const categoryName = (CATEGORIES[p.category] && CATEGORIES[p.category].name) || p.category || 'منتجات ايلا';
-  let alertIds = []; try { alertIds = JSON.parse(localStorage.getItem('ayla_product_availability_alerts_v1') || '[]'); } catch(e) {}
+  const gallery = productGalleryImages(p); const galleryIndex = Math.min(PRODUCT_GALLERY_INDEX.get(Number(p.id)) || 0, Math.max(0, gallery.length - 1)); PRODUCT_GALLERY_INDEX.set(Number(p.id), galleryIndex); const image = gallery[galleryIndex] || '';
+  const price = Number(wholesaleUnlocked ? (p.priceWholesale || p.priceRetail) : p.priceRetail) || 0; const qty = Number(cart[p.id] || 0); const brand = typeof getBrand === 'function' ? getBrand(p.name) : ''; const categoryName = (CATEGORIES[p.category] && CATEGORIES[p.category].name) || p.category || 'منتجات ايلا';
+  let alertIds = []; try { alertIds = JSON.parse(localStorage.getItem('ayla_product_availability_alerts_v1') || '[]'); } catch(e) {} const priceAlert = getSavedPriceAlert(p.id);
   const imageHtml = image ? `<img src="${image}" alt="${p.name || 'صورة المنتج'}" loading="eager" decoding="async">` : `<span style="font-size:70px;">${p.emoji || '📦'}</span>`;
-  const related = PRODUCTS_DATA.filter(x => x.id !== p.id && !x.pendingApproval && !x.__isOffer && !x.__isSpecialOffer && x.category === p.category).slice(0, 6);
-  const complementary = PRODUCTS_DATA.filter(x => x.id !== p.id && !x.pendingApproval && !x.__isOffer && !x.__isSpecialOffer && x.category !== p.category && !related.some(r => r.id === x.id)).slice(0, 4);
-  const relatedProducts = related.length ? related : complementary;
-  const relatedHtml = relatedProducts.length ? relatedProducts.map(x => renderRetailDynamicProductCard(x, x.category === p.category ? 'مشابه' : 'مكمل')).join('') : `<div class="product-detail-empty">لا توجد اقتراحات إضافية لهذا المنتج حاليًا.</div>`;
-  shell.innerHTML = `<div class="product-detail-page">
-    <div class="product-detail-top"><button type="button" class="product-detail-back" onclick="handleBackButton()">→ رجوع</button><div class="product-detail-breadcrumb">الرئيسية ← ${categoryName}</div><button type="button" class="product-detail-share" onclick="shareProductDetail(${Number(p.id)})">↗ مشاركة</button></div>
-    <div class="product-detail-hero">
-      <div class="product-detail-gallery"><span class="product-detail-stock ${p.outOfStock ? 'out' : ''}">${p.outOfStock ? 'نفدت الكمية' : 'متوفر الآن'}</span><div class="product-detail-main-image" onclick="this.classList.toggle('zoomed')">${imageHtml}</div>${image ? `<div class="product-detail-thumb"><img src="${image}" alt="مصغرة ${p.name || ''}"></div>` : ''}</div>
-      <div class="product-detail-info"><div class="product-detail-brand">${brand && brand !== 'أصناف أخرى' ? brand : 'منتجات ايلا ستورز'}</div><h1 class="product-detail-name">${p.name || 'منتج'}</h1><div class="product-detail-unit">الوحدة: ${p.unit || 'حسب العبوة'}</div>${p.description ? `<div class="product-detail-description">${p.description}</div>` : ''}<div class="product-detail-price-row"><div class="product-detail-price">${price > 0 ? price.toFixed(2) : 'لاحقًا'}<small>${price > 0 ? 'د.أ' : ''}</small></div>${!p.outOfStock ? `<div class="product-detail-qty"><button type="button" onclick="changeQuantity(${Number(p.id)},-1); renderProductDetail(${Number(p.id)})">−</button><span>${qty}</span><button type="button" onclick="changeQuantity(${Number(p.id)},1); renderProductDetail(${Number(p.id)})">+</button></div>` : ''}</div><button type="button" class="product-detail-action ${p.outOfStock ? 'out' : ''}" onclick="${p.outOfStock ? `toggleProductAvailabilityAlert(${Number(p.id)})` : `changeQuantity(${Number(p.id)},1); renderProductDetail(${Number(p.id)})`}">${p.outOfStock ? (alertIds.includes(Number(p.id)) ? '✓ سنخبرك عند التوفر' : '🔔 أخبرني عند التوفر') : (qty ? '✓ تمت الإضافة — أضف المزيد' : 'أضف إلى السلة')}</button><div class="product-detail-facts"><div class="product-detail-fact"><b>✓</b>سعر واضح</div><div class="product-detail-fact"><b>🚚</b>توصيل</div><div class="product-detail-fact"><b>↻</b>تحديث مستمر</div></div></div>
-    </div><section class="product-detail-related"><h3>${related.length ? 'منتجات مشابهة' : 'قد يناسبك أيضًا'}</h3><div class="product-detail-related-grid">${relatedHtml}</div></section>
-  </div>`;
+  const thumbs = gallery.length > 1 ? `<div class="product-detail-thumbs">${gallery.map((src, i) => `<button type="button" class="product-detail-thumb ${i === galleryIndex ? 'active' : ''}" onclick="setProductDetailGallery(${Number(p.id)},${i})"><img src="${src}" alt="صورة ${i + 1}"></button>`).join('')}</div>` : '';
+  const related = PRODUCTS_DATA.filter(x => x.id !== p.id && !x.pendingApproval && !x.__isOffer && !x.__isSpecialOffer && x.category === p.category).slice(0, 6); const complementary = PRODUCTS_DATA.filter(x => x.id !== p.id && !x.pendingApproval && !x.__isOffer && !x.__isSpecialOffer && x.category !== p.category && !related.some(r => r.id === x.id)).slice(0, 4); const relatedProducts = related.length ? related : complementary; const relatedHtml = relatedProducts.length ? relatedProducts.map(x => renderRetailDynamicProductCard(x, x.category === p.category ? 'مشابه' : 'مكمل')).join('') : `<div class="product-detail-empty">لا توجد اقتراحات إضافية لهذا المنتج حاليًا.</div>`;
+  shell.innerHTML = `<div class="product-detail-page"><div class="product-detail-top"><button type="button" class="product-detail-back" onclick="handleBackButton()">→ رجوع</button><div class="product-detail-breadcrumb">الرئيسية ← ${categoryName}</div><button type="button" class="product-detail-share" onclick="shareProductDetail(${Number(p.id)})">↗ مشاركة</button></div><div class="product-detail-hero"><div class="product-detail-gallery"><span class="product-detail-stock ${p.outOfStock ? 'out' : ''}">${p.outOfStock ? 'نفدت الكمية' : 'متوفر الآن'}</span><div class="product-detail-main-image" onclick="this.classList.toggle('zoomed')">${imageHtml}</div>${thumbs}</div><div class="product-detail-info"><div class="product-detail-brand">${brand && brand !== 'أصناف أخرى' ? brand : 'منتجات ايلا ستورز'}</div><h1 class="product-detail-name">${p.name || 'منتج'}</h1><div class="product-detail-unit">الوحدة: ${p.unit || 'حسب العبوة'}</div>${p.description ? `<div class="product-detail-description">${p.description}</div>` : ''}<div id="productRatingSummary-${Number(p.id)}" class="product-detail-rating"><span class="product-detail-stars">☆☆☆☆☆</span><span class="product-detail-rating-count">جارٍ تحميل التقييمات...</span></div><div class="product-detail-price-row"><div class="product-detail-price">${price > 0 ? price.toFixed(2) : 'لاحقًا'}<small>${price > 0 ? 'د.أ' : ''}</small></div>${!p.outOfStock ? `<div class="product-detail-qty"><button type="button" onclick="changeQuantity(${Number(p.id)},-1); renderProductDetail(${Number(p.id)})">−</button><span>${qty}</span><button type="button" onclick="changeQuantity(${Number(p.id)},1); renderProductDetail(${Number(p.id)})">+</button></div>` : ''}</div><button type="button" class="product-detail-action ${p.outOfStock ? 'out' : ''}" onclick="${p.outOfStock ? `toggleProductAvailabilityAlert(${Number(p.id)})` : `changeQuantity(${Number(p.id)},1); renderProductDetail(${Number(p.id)})`}">${p.outOfStock ? (alertIds.includes(Number(p.id)) ? '✓ سنخبرك عند التوفر' : '🔔 أخبرني عند التوفر') : (qty ? '✓ تمت الإضافة — أضف المزيد' : 'أضف إلى السلة')}</button>${!p.outOfStock && price > 0 ? `<div class="product-detail-alert"><span>${priceAlert ? `تنبيه محفوظ عند ${Number(priceAlert.targetPrice).toFixed(2)} د.أ` : 'هل تريد متابعة أي انخفاض على السعر؟'}</span><button type="button" class="${priceAlert ? 'active' : ''}" onclick="toggleProductPriceAlert(${Number(p.id)},${price})">${priceAlert ? 'إلغاء التنبيه' : 'نبّهني عند انخفاض السعر'}</button></div>` : ''}<div class="product-detail-facts"><div class="product-detail-fact"><b>✓</b>سعر واضح</div><div class="product-detail-fact"><b>🚚</b>توصيل</div><div class="product-detail-fact"><b>↻</b>تحديث مستمر</div></div></div></div><section class="product-detail-related"><h3>${related.length ? 'منتجات مشابهة' : 'قد يناسبك أيضًا'}</h3><div class="product-detail-related-grid">${relatedHtml}</div></section><section id="productReviews-${Number(p.id)}" class="product-detail-reviews" data-eligible="0"><div class="product-detail-empty">جارٍ تحميل التقييمات...</div></section></div>`;
+  loadProductReviews(Number(p.id)); checkProductReviewEligibility(Number(p.id));
 }
 function renderRetailDynamicProductCard(product, badge){
   const image = productDisplayImage(product);
