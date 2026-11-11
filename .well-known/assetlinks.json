@@ -1,0 +1,13 @@
+   [
+     {
+       "relation": ["delegate_permission/common.handle_all_urls"],
+       "target": {
+         "namespace": "android_app",
+         "package_name": "com.aylastores.app",
+         "sha256_cert_fingerprints": [
+           "51:FA:53:50:87:48:79:EE:35:6E:69:4A:9C:8E:70:35:69:B0:A3:71:95:B9:E9:1D:CA:47:37:98:03:15:60:4A",
+           "C1:20:74:5C:41:45:F1:11:55:21:6F:4F:9F:90:DE:BF:1A:1C:8E:0D:3B:9E:96:DB:DD:5C:5A:04:B9:C3:DA:9F"
+         ]
+       }
+     }
+   ]
